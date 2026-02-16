@@ -229,12 +229,12 @@ export default function HomePage() {
             {mockProducts.map((product) => (
               <ProductCard
                 key={product.slug}
-                imageUrl={product.imageUrl}
+                images={[{ src: product.imageUrl, alt: product.title }]}
                 title={product.title}
                 price={product.price}
                 slug={product.slug}
                 inStock={product.inStock}
-                onAddToCart={() => {}}
+                onAddToCart={() => { }}
               />
             ))}
           </div>
