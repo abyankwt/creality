@@ -4,15 +4,16 @@ import { fetchProductBySlug, type WCProduct } from "@/lib/api";
 import ProductDetail from "@/components/ProductDetail";
 
 type ProductPageProps = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 export async function generateMetadata(
   { params }: ProductPageProps
 ): Promise<Metadata> {
-  const product = await fetchProductBySlug(params.slug);
+  const { slug } = await params;
+  const product = await fetchProductBySlug(slug);
   if (!product) {
     return {
       title: "Product not found | Creality Kuwait",
@@ -26,7 +27,8 @@ export async function generateMetadata(
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const product = await fetchProductBySlug(params.slug);
+  const { slug } = await params;
+  const product = await fetchProductBySlug(slug);
 
   if (!product) {
     notFound();
