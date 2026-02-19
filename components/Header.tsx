@@ -11,6 +11,7 @@ import {
   type MouseEvent,
 } from "react";
 import { useCart } from "@/context/CartContext";
+import { ChevronDown, User } from "lucide-react";
 
 type SearchResult = {
   id: number;
@@ -18,6 +19,17 @@ type SearchResult = {
   slug: string;
   price: string;
   images?: Array<{ src: string }>;
+};
+
+type AuthUser = {
+  id?: string | number;
+  name?: string;
+  email?: string;
+  [key: string]: unknown;
+};
+
+type AuthResponse = {
+  user: AuthUser | null;
 };
 
 const navLinks = [
@@ -30,7 +42,6 @@ const navLinks = [
 const actionLinks = [
   { href: "/search", label: "Search" },
   { href: "/cart", label: "Cart" },
-  { href: "/account", label: "Account" },
 ];
 
 export default function Header() {
@@ -39,11 +50,37 @@ export default function Header() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const accountRef = useRef<HTMLDivElement | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
 
   const trimmedQuery = useMemo(() => query.trim(), [query]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/me");
+        const data = (await response.json()) as AuthResponse;
+        if (isMounted) {
+          setUser(data?.user ?? null);
+        }
+      } catch {
+        if (isMounted) {
+          setUser(null);
+        }
+      }
+    };
+
+    void loadAuth();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!trimmedQuery) {
@@ -98,6 +135,22 @@ export default function Header() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | globalThis.MouseEvent) => {
+      if (!accountRef.current) {
+        return;
+      }
+      if (!accountRef.current.contains(event.target as Node)) {
+        setIsAccountOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const next = event.target.value;
     setQuery(next);
@@ -112,6 +165,19 @@ export default function Header() {
     setQuery("");
     setResults([]);
     event.currentTarget.blur();
+  };
+
+  const handleAccountToggle = () => {
+    setIsAccountOpen((prev) => !prev);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      setUser(null);
+      setIsAccountOpen(false);
+    }
   };
 
   return (
@@ -216,6 +282,75 @@ export default function Header() {
               </Link>
             )
           )}
+          <div className="relative" ref={accountRef}>
+            <button
+              type="button"
+              className="flex items-center gap-1 text-gray-500 transition hover:text-gray-700"
+              aria-haspopup="menu"
+              aria-expanded={isAccountOpen}
+              onClick={handleAccountToggle}
+            >
+              <User className="h-4 w-4" aria-hidden="true" />
+              <span className="text-sm">Account</span>
+              <ChevronDown
+                className={`h-4 w-4 transition-transform duration-200 ${isAccountOpen ? "rotate-180" : "rotate-0"}`}
+                aria-hidden="true"
+              />
+            </button>
+            {isAccountOpen && (
+              <div className="absolute right-0 mt-3 w-48 rounded-xl border border-gray-100 bg-white shadow-lg">
+                {user ? (
+                  <div className="py-2">
+                    <Link
+                      href="/account"
+                      className="block px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-text"
+                      onClick={() => setIsAccountOpen(false)}
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/account?tab=orders"
+                      className="block px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-text"
+                      onClick={() => setIsAccountOpen(false)}
+                    >
+                      Orders
+                    </Link>
+                    <Link
+                      href="/account?tab=addresses"
+                      className="block px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-text"
+                      onClick={() => setIsAccountOpen(false)}
+                    >
+                      Addresses
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="block w-full px-4 py-2 text-left text-sm text-gray-600 transition hover:bg-gray-50 hover:text-text"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                ) : (
+                  <div className="py-2">
+                    <Link
+                      href="/login"
+                      className="block px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-text"
+                      onClick={() => setIsAccountOpen(false)}
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      href="/register"
+                      className="block px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-text"
+                      onClick={() => setIsAccountOpen(false)}
+                    >
+                      Register
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

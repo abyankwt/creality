@@ -14,7 +14,8 @@ type Product = {
     name: string;
     slug: string;
     price: string;
-    in_stock: boolean;
+    purchasable: boolean;
+    stock_status: string;
     images: ProductImage[];
 };
 
@@ -61,12 +62,16 @@ export default function ProductGrid({
                 {products.map((product) => (
                     <ProductCard
                         key={product.id}
-                        product={{ id: product.id, images: product.images }}
+                        product={{
+                            id: product.id,
+                            images: product.images,
+                            purchasable: product.purchasable,
+                            stock_status: product.stock_status,
+                        }}
                         imageUrl={product.images?.[0]?.src ?? ""}
                         title={product.name}
                         price={parseFloat(product.price)}
                         slug={product.slug}
-                        inStock={product.in_stock}
                     />
                 ))}
             </div>

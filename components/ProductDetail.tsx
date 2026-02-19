@@ -49,11 +49,10 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
 
-  const isInStock = product.in_stock;
-  const stockQuantity = product.stock_quantity ?? 0;
-  const isLowStock = stockQuantity > 0 && stockQuantity <= 3;
+  const isAvailable =
+    product.purchasable && product.stock_status === "instock";
   const mainImage = selectedImage || product.images?.[0]?.src || "/placeholder.png";
-  const canAdd = useMemo(() => isInStock && !adding, [isInStock, adding]);
+  const canAdd = useMemo(() => isAvailable && !adding, [isAvailable, adding]);
 
   useEffect(() => {
     const ids = product.related_ids ?? [];
@@ -170,11 +169,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             </p>
 
             <div className="mt-3">
-              {isLowStock ? (
-                <span className="inline-flex items-center rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-600">
-                  Low Stock
-                </span>
-              ) : isInStock ? (
+              {isAvailable ? (
                 <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-600">
                   In Stock
                 </span>
@@ -330,11 +325,15 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               <ProductCard
                 key={related.id}
                 imageUrl={related.images?.[0]?.src ?? ""}
-                product={{ id: related.id, images: related.images }}
+                product={{
+                  id: related.id,
+                  images: related.images,
+                  purchasable: related.purchasable,
+                  stock_status: related.stock_status,
+                }}
                 title={related.name}
                 price={Number(related.price)}
                 slug={related.slug}
-                inStock={related.in_stock}
                 onAddToCart={() => {}}
               />
             ))}

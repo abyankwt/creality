@@ -15,11 +15,12 @@ type ProductCardProps = {
   product?: {
     id?: number | null;
     images?: ProductImage[] | null;
+    purchasable?: boolean | null;
+    stock_status?: string | null;
   } | null;
   title: string;
   price: number;
   slug: string;
-  inStock: boolean;
   onAddToCart?: () => void;
 };
 
@@ -39,11 +40,13 @@ export default function ProductCard({
   title,
   price,
   slug,
-  inStock,
 }: ProductCardProps) {
   const [loading, setLoading] = useState<boolean>(false);
   const resolvedImage = product?.images?.[0]?.src || fallbackImage;
   const resolvedAlt = title;
+  const isAvailable = Boolean(
+    product?.purchasable && product?.stock_status === "instock"
+  );
 
   const handleAddToCart = async (): Promise<void> => {
     if (!product?.id) {
@@ -91,17 +94,17 @@ export default function ProductCard({
             {formatPrice(price)}
           </span>
           <span className="text-xs text-gray-500">
-            {inStock ? "In stock" : "Unavailable"}
+            {isAvailable ? "In stock" : "Out of stock"}
           </span>
         </div>
 
         <button
           type="button"
           onClick={handleAddToCart}
-          disabled={!inStock || loading}
-          aria-disabled={!inStock || loading}
+          disabled={!isAvailable || loading}
+          aria-disabled={!isAvailable || loading}
           aria-label={`Add ${title} to cart`}
-          className={`w-full rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-300 ${inStock
+          className={`w-full rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-300 ${isAvailable
               ? "bg-[#6BBE45] text-white hover:bg-[#5AA73C]"
               : "cursor-not-allowed border border-gray-200 text-gray-400"
             }`}
