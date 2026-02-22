@@ -31,6 +31,8 @@ export type WCProduct = {
   regular_price: string;
   sale_price: string;
   in_stock: boolean;
+  purchasable: boolean;
+  stock_status: string;
   images: WCImage[];
   categories: WCCategory[];
 };

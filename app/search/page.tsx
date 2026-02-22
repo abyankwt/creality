@@ -47,9 +47,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
     { search: query } as FetchProductsParams
   );
 
-  const handleAddToCart = async () => {
-    "use server";
-  };
+
 
   return (
     <div className="mx-auto w-full max-w-7xl px-6 py-12 sm:py-16">
@@ -75,12 +73,15 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             <ProductCard
               key={product.id}
               imageUrl={product.images?.[0]?.src ?? ""}
-              product={{ id: product.id, images: product.images }}
+              product={{
+                id: product.id,
+                images: product.images,
+                purchasable: product.purchasable,
+                stock_status: product.stock_status,
+              }}
               title={product.name}
               price={Number(product.price)}
               slug={product.slug}
-              inStock={product.in_stock}
-              onAddToCart={handleAddToCart}
             />
           ))}
         </div>
