@@ -4,10 +4,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
-type RegisterResponse = {
-  success?: boolean;
-  error?: string;
-};
+type RegisterResponse =
+  | { success: true; data: { userId: number; name: string; email: string } }
+  | { success: false; error: string };
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -43,7 +42,7 @@ export default function RegisterPage() {
         return;
       }
 
-      router.replace("/login");
+      router.replace("/account");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Registration failed.";
       setError(message);
@@ -104,12 +103,14 @@ export default function RegisterPage() {
               name="password"
               type="password"
               autoComplete="new-password"
+              minLength={8}
               className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
               placeholder="********"
               required
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
+            <p className="mt-2 text-xs text-gray-500">Minimum 8 characters.</p>
           </div>
 
           <div>
@@ -121,6 +122,7 @@ export default function RegisterPage() {
               name="confirmPassword"
               type="password"
               autoComplete="new-password"
+              minLength={8}
               className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
               placeholder="********"
               required

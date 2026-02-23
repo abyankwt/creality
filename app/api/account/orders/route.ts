@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { apiError, apiSuccess, ERROR_MESSAGES, resolveErrorMessage } from "@/lib/errors";
 import { SESSION_COOKIE_NAME, verifySession } from "@/lib/auth-session";
-import { getWpUserById } from "@/lib/woo-client";
-import type { UserSession } from "@/lib/types";
+import { getWooOrders } from "@/lib/woo-client";
+import type { WooOrder } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,18 +16,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(apiError(ERROR_MESSAGES.unauthorized), { status: 401 });
     }
 
-    const refreshed = await getWpUserById(session.userId);
-    if (!refreshed.ok || !refreshed.data?.id) {
-      return NextResponse.json(apiSuccess(session));
+    const response = await getWooOrders(session.userId);
+    if (!response.ok || !response.data) {
+      return NextResponse.json(apiError(ERROR_MESSAGES.serviceUnavailable), {
+        status: response.status || 502,
+      });
     }
 
-    const data: UserSession = {
-      userId: refreshed.data.id,
-      name: refreshed.data.name,
-      email: refreshed.data.email ?? session.email,
-    };
+    const orders: WooOrder[] = response.data.map((order) => ({
+      id: order.id,
+      status: order.status,
+      date: order.date_created,
+      total: order.total,
+      currency: order.currency,
+    }));
 
-    return NextResponse.json(apiSuccess(data));
+    return NextResponse.json(apiSuccess(orders));
   } catch (error) {
     const message = resolveErrorMessage(error, ERROR_MESSAGES.serverError);
     return NextResponse.json(apiError(message), { status: 500 });

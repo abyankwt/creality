@@ -1,16 +1,10 @@
 import { NextResponse } from "next/server";
-import { SESSION_COOKIE_NAME } from "@/lib/session";
+import { apiSuccess } from "@/lib/errors";
+import { destroySession } from "@/lib/auth-session";
 
 export async function POST() {
-  const res = NextResponse.json({ success: true });
-  res.cookies.set({
-    name: SESSION_COOKIE_NAME,
-    value: "",
-    httpOnly: true,
-    secure: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
+  const res = NextResponse.json(apiSuccess({}));
+  const cookie = destroySession();
+  res.cookies.set(cookie.name, cookie.value, cookie.options);
   return res;
 }

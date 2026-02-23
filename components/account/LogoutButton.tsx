@@ -3,10 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-type LogoutResponse = {
-  success?: boolean;
-  error?: string;
-};
+type LogoutResponse =
+  | { success: true; data: Record<string, never> }
+  | { success: false; error: string };
 
 export default function LogoutButton() {
   const router = useRouter();

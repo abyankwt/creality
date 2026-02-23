@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import {
   useEffect,
   useMemo,
@@ -11,7 +12,7 @@ import {
   type MouseEvent,
 } from "react";
 import { useCart } from "@/context/CartContext";
-import { ChevronDown, User } from "lucide-react";
+import { ChevronDown, ShoppingBag, User } from "lucide-react";
 
 type SearchResult = {
   id: number;
@@ -39,14 +40,10 @@ const navLinks = [
   { href: "/support", label: "Support" },
 ];
 
-const actionLinks = [
-  { href: "/search", label: "Search" },
-  { href: "/cart", label: "Cart" },
-];
-
 export default function Header() {
   const { cart } = useCart();
   const itemCount = cart?.items_count ?? 0;
+  const pathname = usePathname();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -182,17 +179,21 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white">
-      <div className="mx-auto flex w-full max-w-7xl items-center gap-6 px-6 py-4 lg:px-8">
+      <div className="mx-auto flex w-full max-w-7xl items-center gap-6 px-6 py-3 lg:px-8">
         <Link href="/" className="inline-block">
           <Image src="/logo.svg" alt="Creality Kuwait Logo" width={160} height={45} className="object-contain" />
         </Link>
 
-        <nav className="hidden items-center gap-8 text-sm text-gray-500 md:flex">
+        <nav className="hidden items-center gap-6 text-sm text-gray-500 md:flex">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="transition hover:text-text"
+              className={`transition hover:text-[#0b0b0b] ${
+                pathname === link.href || pathname?.startsWith(`${link.href}/`)
+                  ? "text-[#0b0b0b]"
+                  : ""
+              }`}
             >
               {link.label}
             </Link>
@@ -210,7 +211,7 @@ export default function Header() {
               value={query}
               onChange={handleChange}
               placeholder="Search products"
-              className="h-11 w-full rounded-full border border-gray-200 bg-white px-5 text-sm text-text placeholder:text-gray-400 focus:border-black focus:outline-none"
+              className="h-10 w-full rounded-full border border-gray-200 bg-white px-5 text-sm text-[#0b0b0b] placeholder:text-gray-400 focus:border-black focus:outline-none"
               aria-label="Search products"
               aria-expanded={isOpen}
               autoComplete="off"
@@ -242,9 +243,9 @@ export default function Header() {
                             />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-text">
-                              {item.name}
-                            </p>
+                          <p className="truncate text-sm font-medium text-[#0b0b0b]">
+                            {item.name}
+                          </p>
                             <p className="text-xs text-gray-500">{item.price}</p>
                           </div>
                         </Link>
@@ -257,35 +258,23 @@ export default function Header() {
           </div>
         </div>
 
-        <div className="flex items-center gap-6 text-sm text-gray-500">
-          {actionLinks.map((link) =>
-            link.href === "/cart" ? (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="relative transition hover:text-text"
-              >
-                {link.label}
-                {itemCount > 0 && (
-                  <span className="absolute -right-3 -top-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-black px-1 text-[10px] font-semibold text-white">
-                    {itemCount}
-                  </span>
-                )}
-              </Link>
-            ) : (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="transition hover:text-text"
-              >
-                {link.label}
-              </Link>
-            )
-          )}
+        <div className="flex items-center gap-5 text-sm text-gray-500">
+          <Link
+            href="/cart"
+            className="relative flex items-center text-[#0b0b0b] transition hover:text-black"
+            aria-label="Cart"
+          >
+            <ShoppingBag className="h-4 w-4" aria-hidden="true" />
+            {itemCount > 0 && (
+              <span className="absolute -right-2 -top-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-black px-1 text-[10px] font-semibold text-white">
+                {itemCount}
+              </span>
+            )}
+          </Link>
           <div className="relative" ref={accountRef}>
             <button
               type="button"
-              className="flex items-center gap-1 text-gray-500 transition hover:text-gray-700"
+              className="flex items-center gap-1 text-gray-500 transition hover:text-[#0b0b0b]"
               aria-haspopup="menu"
               aria-expanded={isAccountOpen}
               onClick={handleAccountToggle}
@@ -303,21 +292,21 @@ export default function Header() {
                   <div className="py-2">
                     <Link
                       href="/account"
-                      className="block px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-text"
+                      className="block px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-[#0b0b0b]"
                       onClick={() => setIsAccountOpen(false)}
                     >
                       Dashboard
                     </Link>
                     <Link
                       href="/account?tab=orders"
-                      className="block px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-text"
+                      className="block px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-[#0b0b0b]"
                       onClick={() => setIsAccountOpen(false)}
                     >
                       Orders
                     </Link>
                     <Link
                       href="/account?tab=addresses"
-                      className="block px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-text"
+                      className="block px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-[#0b0b0b]"
                       onClick={() => setIsAccountOpen(false)}
                     >
                       Addresses
@@ -325,7 +314,7 @@ export default function Header() {
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="block w-full px-4 py-2 text-left text-sm text-gray-600 transition hover:bg-gray-50 hover:text-text"
+                      className="block w-full px-4 py-2 text-left text-sm text-gray-600 transition hover:bg-gray-50 hover:text-[#0b0b0b]"
                     >
                       Logout
                     </button>
@@ -334,14 +323,14 @@ export default function Header() {
                   <div className="py-2">
                     <Link
                       href="/login"
-                      className="block px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-text"
+                      className="block px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-[#0b0b0b]"
                       onClick={() => setIsAccountOpen(false)}
                     >
                       Login
                     </Link>
                     <Link
                       href="/register"
-                      className="block px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-text"
+                      className="block px-4 py-2 text-sm text-gray-600 transition hover:bg-gray-50 hover:text-[#0b0b0b]"
                       onClick={() => setIsAccountOpen(false)}
                     >
                       Register

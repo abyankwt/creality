@@ -28,6 +28,8 @@ export type WCProduct = {
   description?: string;
   short_description?: string;
   price: string;
+  formatted_price?: string;
+  price_html?: string;
   regular_price: string;
   sale_price: string;
   in_stock: boolean;

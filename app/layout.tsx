@@ -2,7 +2,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
-import Header from "@/components/Header";
+import Navbar from "@/components/navigation/Navbar";
 import Footer from "@/components/Footer";
 import { CartProvider } from "@/context/CartContext";
 
@@ -19,10 +19,10 @@ export default function RootLayout({
   children: ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-neutral text-text`}>
+    <html lang="en" className="scroll-smooth">
+      <body className={`${inter.className} bg-white text-gray-900`}>
         <CartProvider>
-          <Header />
+          <Navbar />
           <main className="min-h-screen">
             {children}
           </main>

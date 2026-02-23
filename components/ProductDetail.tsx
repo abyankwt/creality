@@ -16,26 +16,36 @@ type ProductDetailProps = {
       name: string;
       options: string[];
     }>;
+    meta_data?: Array<{
+      id?: number;
+      key: string;
+      value: string;
+    }>;
   };
 };
 
 type RelatedProduct = WCProduct;
 
-type ActiveTab = "description" | "specs";
+const extractVideoUrl = (meta: ProductDetailProps["product"]["meta_data"]) => {
+  const entry = meta?.find((item) => item.key === "video_url" || item.key === "video");
+  return entry?.value ?? "";
+};
 
-const formatPrice = (value: string) => {
-  if (!value) {
-    return "-";
+const getEmbedUrl = (url: string) => {
+  if (url.includes("youtube.com") || url.includes("youtu.be")) {
+    const match =
+      url.match(/v=([^&]+)/) ||
+      url.match(/youtu\.be\/([^?]+)/) ||
+      url.match(/embed\/([^?]+)/);
+    const id = match?.[1];
+    return id ? `https://www.youtube.com/embed/${id}` : "";
   }
-  const numeric = Number(value);
-  if (Number.isNaN(numeric)) {
-    return value;
+  if (url.includes("vimeo.com")) {
+    const match = url.match(/vimeo\.com\/(\d+)/);
+    const id = match?.[1];
+    return id ? `https://player.vimeo.com/video/${id}` : "";
   }
-  return new Intl.NumberFormat("en-KW", {
-    style: "currency",
-    currency: "KWD",
-    minimumFractionDigits: 2,
-  }).format(numeric);
+  return "";
 };
 
 export default function ProductDetail({ product }: ProductDetailProps) {
@@ -44,15 +54,18 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     product.images?.[0]?.src ?? "/placeholder.png"
   );
   const [quantity, setQuantity] = useState(1);
-  const [activeTab, setActiveTab] = useState<ActiveTab>("description");
   const [adding, setAdding] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
+  const [specsOpen, setSpecsOpen] = useState(true);
 
   const isAvailable =
     product.purchasable && product.stock_status === "instock";
   const mainImage = selectedImage || product.images?.[0]?.src || "/placeholder.png";
   const canAdd = useMemo(() => isAvailable && !adding, [isAvailable, adding]);
+  const videoUrl = extractVideoUrl(product.meta_data);
+  const embedUrl = getEmbedUrl(videoUrl);
+  const priceHtml = product.formatted_price?.trim() || product.price_html?.trim();
 
   useEffect(() => {
     const ids = product.related_ids ?? [];
@@ -112,10 +125,10 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 pb-28 pt-12 sm:pt-16 lg:pb-16">
+    <div className="mx-auto w-full max-w-6xl px-6 pb-24 pt-12 sm:pt-16 lg:pb-16">
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px]">
         <section className="space-y-6">
-          <div className="group overflow-hidden rounded-xl border border-border bg-white shadow-lg">
+          <div className="group overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
             <div className="relative aspect-[4/3] w-full bg-gray-100">
               <Image
                 src={mainImage}
@@ -138,7 +151,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                     type="button"
                     onClick={() => setSelectedImage(image.src)}
                     className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-xl border transition ${
-                      isActive ? "border-black" : "border-border"
+                      isActive ? "border-black" : "border-gray-200"
                     }`}
                     aria-label={`View ${product.name} image`}
                   >
@@ -157,16 +170,20 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         </section>
 
         <aside className="space-y-6 lg:sticky lg:top-24">
-          <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <p className="text-xs uppercase tracking-[0.3em] text-gray-400">
               Creality Kuwait
             </p>
-            <h1 className="mt-3 text-3xl font-semibold text-text">
+            <h1 className="mt-3 text-3xl font-semibold text-gray-900">
               {product.name}
             </h1>
-            <p className="mt-2 text-2xl font-bold text-text">
-              {formatPrice(product.price)}
-            </p>
+            <div className="mt-2 text-2xl font-bold text-gray-900">
+              {priceHtml ? (
+                <span dangerouslySetInnerHTML={{ __html: priceHtml }} />
+              ) : (
+                <span>{product.price}</span>
+              )}
+            </div>
 
             <div className="mt-3">
               {isAvailable ? (
@@ -224,7 +241,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 type="button"
                 onClick={handleBuyNow}
                 disabled={!canAdd}
-                className="w-full rounded-xl border border-gray-200 bg-white px-6 py-4 text-sm font-semibold text-text transition hover:border-black disabled:cursor-not-allowed disabled:text-gray-400"
+                className="w-full rounded-xl border border-gray-200 bg-white px-6 py-4 text-sm font-semibold text-gray-900 transition hover:border-black disabled:cursor-not-allowed disabled:text-gray-400"
               >
                 Buy now
               </button>
@@ -233,63 +250,34 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         </aside>
       </div>
 
-      <section className="mt-12 rounded-2xl bg-gray-50 px-6 py-8">
-        <div className="grid gap-6 text-center sm:grid-cols-3">
-          <div className="space-y-2">
-            <p className="text-xl">??</p>
-            <p className="text-sm font-semibold text-text">Fast Shipping</p>
-          </div>
-          <div className="space-y-2">
-            <p className="text-xl">??</p>
-            <p className="text-sm font-semibold text-text">1 Year Warranty</p>
-          </div>
-          <div className="space-y-2">
-            <p className="text-xl">??</p>
-            <p className="text-sm font-semibold text-text">Secure Payment</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="mt-12">
-        <div className="border-b border-gray-200">
-          <div className="flex gap-6 text-sm font-semibold">
-            <button
-              type="button"
-              onClick={() => setActiveTab("description")}
-              className={`pb-3 transition ${
-                activeTab === "description"
-                  ? "border-b-2 border-black text-text"
-                  : "text-gray-500"
-              }`}
-            >
-              Description
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("specs")}
-              className={`pb-3 transition ${
-                activeTab === "specs"
-                  ? "border-b-2 border-black text-text"
-                  : "text-gray-500"
-              }`}
-            >
-              Specifications
-            </button>
-          </div>
+      <section className="mt-12 space-y-6">
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900">Description</h2>
+          <div
+            className="prose prose-sm mt-3 max-w-none text-gray-600"
+            dangerouslySetInnerHTML={{ __html: product.description ?? "" }}
+          />
         </div>
 
-        <div className="mt-6 rounded-2xl border border-border bg-white p-6 shadow-sm">
-          {activeTab === "description" ? (
-            <div
-              className="prose prose-sm max-w-none text-gray-600"
-              dangerouslySetInnerHTML={{ __html: product.description ?? "" }}
-            />
-          ) : (
-            <div className="space-y-4">
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setSpecsOpen((prev) => !prev)}
+            className="flex w-full items-center justify-between text-left text-sm font-semibold text-gray-900"
+            aria-expanded={specsOpen}
+          >
+            Technical specifications
+            <span className="text-lg">{specsOpen ? "−" : "+"}</span>
+          </button>
+          <div
+            className="overflow-hidden transition-[max-height] duration-300 ease-out"
+            style={{ maxHeight: specsOpen ? "600px" : "0px" }}
+          >
+            <div className="mt-4 space-y-4">
               {product.attributes && product.attributes.length > 0 ? (
                 product.attributes.map((attribute) => (
                   <div key={attribute.id} className="flex flex-wrap gap-2">
-                    <span className="w-40 text-sm font-semibold text-text">
+                    <span className="w-40 text-sm font-semibold text-gray-900">
                       {attribute.name}
                     </span>
                     <span className="text-sm text-gray-500">
@@ -303,8 +291,23 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 </p>
               )}
             </div>
-          )}
+          </div>
         </div>
+
+        {embedUrl && (
+          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-gray-900">Product video</h2>
+            <div className="mt-4 aspect-video w-full overflow-hidden rounded-2xl bg-gray-100">
+              <iframe
+                src={embedUrl}
+                title={`${product.name} video`}
+                className="h-full w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="mt-12">
@@ -312,11 +315,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           <h2 className="text-2xl font-semibold text-text">You may also like</h2>
         </div>
         {relatedLoading ? (
-          <div className="rounded-2xl border border-dashed border-border bg-white p-8 text-center text-sm text-gray-500">
+          <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
             Loading related products...
           </div>
         ) : relatedProducts.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-white p-8 text-center text-sm text-gray-500">
+          <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
             No related products available.
           </div>
         ) : (
@@ -347,9 +350,13 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             <p className="text-xs uppercase tracking-[0.2em] text-gray-400">
               Price
             </p>
-            <p className="text-lg font-semibold text-text">
-              {formatPrice(product.price)}
-            </p>
+            <div className="text-lg font-semibold text-gray-900">
+              {priceHtml ? (
+                <span dangerouslySetInnerHTML={{ __html: priceHtml }} />
+              ) : (
+                <span>{product.price}</span>
+              )}
+            </div>
           </div>
           <button
             type="button"

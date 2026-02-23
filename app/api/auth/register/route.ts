@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getWpApiUrl, getAdminAuthHeader } from "@/lib/wp";
+import { apiError, apiSuccess, ERROR_MESSAGES, resolveErrorMessage } from "@/lib/errors";
+import { createSession, SESSION_COOKIE_NAME, SESSION_MAX_AGE } from "@/lib/auth-session";
+import { createWooCustomer, updateWooCustomer } from "@/lib/woo-client";
+import { hashPassword } from "@/lib/password";
+import type { UserSession } from "@/lib/types";
 
 type RegisterPayload = {
   name?: string;
@@ -7,13 +11,7 @@ type RegisterPayload = {
   password?: string;
 };
 
-type WooCustomerResponse = {
-  id?: number;
-  email?: string;
-  username?: string;
-  message?: string;
-  code?: string;
-};
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const splitName = (name: string) => {
   const parts = name.trim().split(/\s+/);
@@ -22,58 +20,71 @@ const splitName = (name: string) => {
   return { firstName, lastName };
 };
 
-const usernameFromEmail = (email: string) => {
-  return email.split("@")[0]?.replace(/[^a-zA-Z0-9._-]/g, "") || email;
-};
+const usernameFromEmail = (email: string) =>
+  email.split("@")[0]?.replace(/[^a-zA-Z0-9._-]/g, "") || email;
 
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as RegisterPayload;
+    if (!body || typeof body !== "object") {
+      return NextResponse.json(apiError(ERROR_MESSAGES.badRequest), { status: 400 });
+    }
     const name = body?.name?.trim() ?? "";
     const email = body?.email?.trim().toLowerCase() ?? "";
     const password = body?.password ?? "";
 
-    if (!name || !email || !password) {
-      return NextResponse.json(
-        { error: "Name, email, and password are required." },
-        { status: 400 }
-      );
+    if (!name || !email || !password || !emailRegex.test(email) || password.length < 8) {
+      return NextResponse.json(apiError(ERROR_MESSAGES.badRequest), { status: 400 });
     }
 
     const { firstName, lastName } = splitName(name);
-    const apiUrl = getWpApiUrl();
-    const authHeader = getAdminAuthHeader();
-
-    // Create WooCommerce customer via REST API using admin Application Password.
-    const response = await fetch(`${apiUrl}/wp-json/wc/v3/customers`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: authHeader,
-      },
-      body: JSON.stringify({
-        email,
-        first_name: firstName,
-        last_name: lastName,
-        username: usernameFromEmail(email),
-        password,
-        role: "customer",
-      }),
-      cache: "no-store",
+    const response = await createWooCustomer({
+      email,
+      first_name: firstName,
+      last_name: lastName,
+      username: usernameFromEmail(email),
+      password,
     });
 
-    const data = (await response.json()) as WooCustomerResponse;
-
-    if (!response.ok || !data?.id) {
-      return NextResponse.json(
-        { error: data?.message ?? "Registration failed." },
-        { status: response.status || 400 }
-      );
+    if (!response.ok || !response.data?.id) {
+      const message =
+        response.status >= 500
+          ? ERROR_MESSAGES.serviceUnavailable
+          : (!response.ok && response.errorMessage)
+            ? response.errorMessage
+            : ERROR_MESSAGES.registrationFailed;
+      return NextResponse.json(apiError(message), {
+        status: response.status || 400,
+      });
     }
 
-    return NextResponse.json({ success: true, customerId: data.id });
+    // Store password hash in customer meta_data for login verification
+    const passwordHash = hashPassword(password);
+    await updateWooCustomer(response.data.id, {
+      meta_data: [{ key: "_app_password_hash", value: passwordHash }],
+    });
+
+    const session: UserSession = {
+      userId: response.data.id,
+      name,
+      email,
+    };
+
+    const sessionToken = await createSession(session);
+    const res = NextResponse.json(apiSuccess(session));
+    res.cookies.set({
+      name: SESSION_COOKIE_NAME,
+      value: sessionToken,
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: SESSION_MAX_AGE,
+    });
+
+    return res;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Registration failed.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const message = resolveErrorMessage(error, ERROR_MESSAGES.registrationFailed);
+    return NextResponse.json(apiError(message), { status: 500 });
   }
 }

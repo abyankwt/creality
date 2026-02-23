@@ -1,1 +1,16 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
+
+:root {
+  --surface: #ffffff;
+  --ink: #0b0b0b;
+  --charcoal: #111111;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --accent: #111827;
+  --accent-green: #7bbf6a;
+}
+
+body {
+  background-color: var(--surface);
+  color: var(--ink);
+}
