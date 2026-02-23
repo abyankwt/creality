@@ -21,7 +21,8 @@ export default function LogoutButton() {
       const data = (await response.json()) as LogoutResponse;
 
       if (!response.ok || !data.success) {
-        setError(data.error ?? "Unable to sign out.");
+        const errorMsg = !data.success ? data.error : "Unable to sign out.";
+        setError(errorMsg);
         return;
       }
 

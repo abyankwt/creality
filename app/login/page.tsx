@@ -30,7 +30,8 @@ export default function LoginPage() {
       const data = (await response.json()) as LoginResponse;
 
       if (!response.ok || !data.success) {
-        setError(data.error ?? "Login failed. Please check your credentials.");
+        const errorMsg = !data.success ? data.error : "Login failed. Please check your credentials.";
+        setError(errorMsg);
         return;
       }
 
