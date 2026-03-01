@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 
@@ -24,8 +25,10 @@ const OPTIONS: StoreOption[] = [
 ];
 
 export default function StoreSwitcher() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const currentLabel = pathname === "/printing-service" ? "Printing Service" : "Store";
 
   useEffect(() => {
     const handler = (event: MouseEvent) => {
@@ -47,7 +50,7 @@ export default function StoreSwitcher() {
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        Store
+        {currentLabel}
         <ChevronDown className={`h-3.5 w-3.5 transition ${open ? "rotate-180" : ""}`} />
       </button>
 

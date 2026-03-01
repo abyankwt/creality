@@ -514,64 +514,69 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               </p>
             )}
           </div>
-
-          <div className="order-3 rounded-xl border border-gray-200 bg-white p-4 md:p-5">
-            <h2 className="text-lg font-semibold text-gray-900">Full description</h2>
-            <div
-              className="mt-3 max-w-[760px] text-sm leading-[1.6] text-gray-700"
-              dangerouslySetInnerHTML={{ __html: product.description ?? "" }}
-            />
-          </div>
         </section>
 
         {/* Related products */}
-        <section className="mt-8 md:mt-10">
-          <div className="mb-4 flex items-end justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Related products</h2>
-          </div>
-          {relatedLoading ? (
-            <div className="rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
-              Loading related products…
+          <section className="mt-8 md:mt-10">
+            <div className="mb-4 flex items-end justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Related products</h2>
             </div>
-          ) : relatedProducts.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
-              No related products available.
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
-              {relatedProducts.slice(0, 4).map((related) => (
-                <Link
-                  key={related.id}
-                  href={`/product/${related.slug}`}
-                  className="group rounded-xl border border-gray-200 bg-white p-3 transition hover:border-gray-300"
-                >
-                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-gray-100">
-                    <Image
-                      src={related.images?.[0]?.src ?? FALLBACK_IMAGE}
-                      alt={related.images?.[0]?.alt ?? related.name}
-                      fill
-                      sizes="(max-width: 1024px) 50vw, 25vw"
-                      className="object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-                  <div className="mt-2 space-y-1">
-                    <p className="text-sm font-semibold text-gray-900 line-clamp-2">
-                      {related.name}
-                    </p>
-                    <div className="text-sm font-semibold text-gray-900">
-                      {renderPrice(related)}
+            {relatedLoading ? (
+              <div className="rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
+                Loading related products…
+              </div>
+            ) : relatedProducts.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
+                No related products available.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+                {relatedProducts.slice(0, 4).map((related) => (
+                  <Link
+                    key={related.id}
+                    href={`/product/${related.slug}`}
+                    className="group rounded-xl border border-gray-200 bg-white p-3 transition hover:border-gray-300"
+                  >
+                    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-gray-100">
+                      <Image
+                        src={related.images?.[0]?.src ?? FALLBACK_IMAGE}
+                        alt={related.images?.[0]?.alt ?? related.name}
+                        fill
+                        sizes="(max-width: 1024px) 50vw, 25vw"
+                        className="object-cover"
+                        loading="lazy"
+                      />
                     </div>
-                    <p className="text-xs text-gray-500">
-                      {getStockLabel(related.stock_status)}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
+                    <div className="mt-2 space-y-1">
+                      <p className="text-sm font-semibold text-gray-900 line-clamp-2">
+                        {related.name}
+                      </p>
+                      <div className="text-sm font-semibold text-gray-900">
+                        {renderPrice(related)}
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {getStockLabel(related.stock_status)}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
       </div>
+
+      {/* Full-width Description Layer */}
+      {product.description && (
+        <div className="w-full bg-[#f8f8f8]">
+          <div className="mx-auto w-full max-w-7xl">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 px-4 md:px-8 pt-8">Overview</h2>
+          </div>
+          <div
+            className="w-full [&_p]:m-0 [&_p]:p-0 [&_img]:w-full [&_img]:h-auto [&_img]:block [&_img]:m-0 [&_img]:rounded-none [&_img:not(:last-child)]:mb-[-1px] max-w-none text-gray-800"
+            dangerouslySetInnerHTML={{ __html: product.description }}
+          />
+        </div>
+      )}
 
       {/* ─── Sticky Mobile Add-to-Cart Bar ─── */}
       <div
@@ -620,8 +625,8 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         <div className="fixed bottom-20 left-1/2 z-50 w-[90%] max-w-sm -translate-x-1/2 rounded-lg border px-4 py-3 text-sm sm:bottom-8">
           <div
             className={`rounded-md px-3 py-2 text-center font-semibold ${toast.type === "success"
-                ? "border border-green-200 bg-green-50 text-green-700"
-                : "border border-red-200 bg-red-50 text-red-600"
+              ? "border border-green-200 bg-green-50 text-green-700"
+              : "border border-red-200 bg-red-50 text-red-600"
               }`}
           >
             {toast.message}

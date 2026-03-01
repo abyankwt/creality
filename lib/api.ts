@@ -7,6 +7,7 @@ type FetchProductsParams = {
   orderby?: string;
   order?: "asc" | "desc";
   stock_status?: string;
+  tag?: string;
 };
 
 type WCImage = {
@@ -107,6 +108,7 @@ export const fetchProducts = async (params: FetchProductsParams = {}) => {
     orderby: params.orderby,
     order: params.order,
     stock_status: params.stock_status,
+    tag: params.tag,
   });
 };
 
@@ -118,6 +120,34 @@ export const fetchProductBySlug = async (slug: string) => {
 
   return products[0] ?? null;
 };
+
+export async function fetchHeroImages(): Promise<string[]> {
+  const baseUrl = process.env.WC_BASE_URL?.replace(/\/$/, "");
+  if (!baseUrl) return [];
+
+  // Assuming the old WP site has a page with slug "home" containing the slider
+  try {
+    const url = `${baseUrl}/wp-json/wp/v2/pages?slug=home`;
+    const res = await fetch(url, { next: { revalidate: 60 } });
+    if (!res.ok) return [];
+
+    const pages = await res.json();
+    if (!pages || pages.length === 0) return [];
+
+    const content = pages[0].content?.rendered || "";
+    // Match the elementor swiper-slide images
+    const matchIter = content.matchAll(/<div class="swiper-slide">\s*<img[^>]+src="([^">]+)"/g);
+    const images: string[] = [];
+    for (const match of matchIter) {
+      if (match[1]) images.push(match[1]);
+    }
+
+    return images;
+  } catch (error) {
+    console.error("Error fetching WP hero images:", error);
+    return [];
+  }
+}
 
 export const fetchCategories = async () => {
   const { data } = await fetchFromWoo<WCCategory[]>("products/categories", {

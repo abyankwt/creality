@@ -1,0 +1,174 @@
+﻿{
+    "value":  [
+                  {
+                      "id":  5,
+                      "date":  "2022-03-07T12:15:09",
+                      "date_gmt":  "2022-03-07T09:15:09",
+                      "guid":  {
+                                   "rendered":  "http://creality.com.kw/site/?page_id=5"
+                               },
+                      "modified":  "2022-05-23T15:52:44",
+                      "modified_gmt":  "2022-05-23T12:52:44",
+                      "slug":  "home",
+                      "status":  "publish",
+                      "type":  "page",
+                      "link":  "https://creality.com.kw/site/home/",
+                      "title":  {
+                                    "rendered":  "Home"
+                                },
+                      "content":  {
+                                      "rendered":  "\t\t\u003cdiv data-elementor-type=\"wp-page\" data-elementor-id=\"5\" class=\"elementor elementor-5\"\u003e\n\t\t\t\t\t\t\u003csection class=\"elementor-section elementor-top-section elementor-element elementor-element-28222a1c elementor-section-boxed elementor-section-height-default elementor-section-height-default\" data-id=\"28222a1c\" data-element_type=\"section\"\u003e\n\t\t\t\t\t\t\u003cdiv class=\"elementor-container elementor-column-gap-default\"\u003e\n\t\t\t\t\t\u003cdiv class=\"elementor-column elementor-col-100 elementor-top-column elementor-element elementor-element-4b4f8b85\" data-id=\"4b4f8b85\" data-element_type=\"column\"\u003e\n\t\t\t\u003cdiv class=\"elementor-widget-wrap elementor-element-populated\"\u003e\n\t\t\t\t\t\t\u003cdiv class=\"elementor-element elementor-element-2dda26da elementor-widget elementor-widget-text-editor\" data-id=\"2dda26da\" data-element_type=\"widget\" data-widget_type=\"text-editor.default\"\u003e\n\t\t\t\t\u003cdiv class=\"elementor-widget-container\"\u003e\n\t\t\t\t\t\t\t\t\t\u003cp\u003e\u003cp\u003e\u003c/p\u003e\n\u003cstyle\u003e#rpg-73 .img-slider-item .caption { background-color: #ffffff;  }#rpg-73 .img-slider-item .figc {color:#ffffff;}#rpg-73 .rpg-title {  font-size: 18px; }#rpg-73 { width:100%;}#rpg-73  p.description { color:#ffffff;font-size:14px; }#rpg-73  .rpg-title { color:#ffffff; }style=\u0026quot;margin: auto;\u0026quot;\u003c/style\u003e\n\u003cdiv id=\"rpg-73\" class=\"img-slider image-slider \" style=\"margin: 50px auto;\" data-config=\"{\u0026quot;columns\u0026quot;:12,\u0026quot;gutter\u0026quot;:8}\"\u003e\n\u003cp\u003e\u003c!-- Demo styles --\u003e\u003c/p\u003e\n\u003cstyle\u003e\n\u003cp\u003e    .swiper-container {\n      width: 100%;\n      height: 100%; \n      padding-right: 0px;\n      padding-left: 0px;\n      margin-right: auto;\n      margin-left: auto;\n    }\u003c/p\u003e\n\u003cp\u003e    body.template-full-width .entry-content \u003e *:not(.alignwide):not(.alignfull):not(.alignleft):not(.alignright):not(.is-style-wide), body.template-full-width [class*=\"__inner-container\"] \u003e *:not(.alignwide):not(.alignfull):not(.alignleft):not(.alignright):not(.is-style-wide)\n    {\n      max-width: max-content;\n    }\u003c/p\u003e\n\u003cp\u003e    /*.img-slider-swiper-button-next:after, .img-slider-swiper-button-prev:after {\n      font-size: 30px;\n      color: #000;\n      font-weight: bold;\n    }\u003c/p\u003e\n\u003cp\u003e    .img-slider-swiper-button-prev{\n      width: 50px;\n      background: #fff;\n      background-position: -82px -22px;\n      height: 50px;\n      cursor: pointer;\n      top: 50%;\n      left: 30px;\n      margin-top: -25px;\n      position: absolute;\n      z-index: 110;\n    }\u003c/p\u003e\n\u003cp\u003e    .img-slider-swiper-button-next{\n      right: 30px;\n      left: auto;\n      background-position: -81px -99px;\u003c/p\u003e\n\u003cp\u003e      width: 50px;\n      background: #fff;\n      height: 50px;\n      cursor: pointer;\n      top: 50%;\n      margin-top: -25px;\n      position: absolute;\n      z-index: 110;\n    }*/\u003c/p\u003e\n\u003cp\u003e    .img-slider-swiper-button-prev {\n        position: relative;\n        width: auto;\n        height: auto;\n        padding: 5px 20px !important;\n        background: transparent; \n        border-radius: 0%; \n        background-position: -82px -22px;\n        cursor: pointer;\n        top: 45%;\n        left: 30px;\n        margin-top: -25px;\n        position: absolute;\n        z-index: 110;\n    }\u003c/p\u003e\n\u003cp\u003e    .img-slider-swiper-button-next {\n        position: relative;\n        right: 30px;\n        left: auto;\n        background-position: -81px -99px;\n        padding: 5px 20px !important;\n        width: auto;\n        height: auto;\n        background: transparent; \n        border-radius: 0%;\n        cursor: pointer;\n        top: 45%;\n        margin-top: -25px;\n        position: absolute;\n        z-index: 110;\n    }\u003c/p\u003e\n\u003cp\u003e    .img-slider-swiper-button-next:after, .img-slider-swiper-button-prev:after{\n        font-size: 32px; \n        font-weight: bold;\n        color: #107eb6;  \n    }\u003c/p\u003e\n\u003cp\u003e    .img-slider-swiper-button-prev:hover,\n    .img-slider-swiper-button-next:hover {\n        background: #107eb6;\n    }\u003c/p\u003e\n\u003cp\u003e    .boxed-prev:hover .img-slider-swiper-button-prev:after,\n    .boxed-next:hover .img-slider-swiper-button-next:after{\n        color: #fff;\n    }\u003c/p\u003e\n\u003cp\u003e    .img-slider .swiper-slide img{\n      width: 100%;\n      height: auto;\u003c/p\u003e\n\u003cp\u003e    }\u003c/p\u003e\n\u003c/style\u003e\n\u003cp\u003e\u003c!-- Swiper --\u003e\u003c/p\u003e\n\u003cdiv class=\"swiper-container img-slider-swiper-auto\"\u003e\n\u003cdiv class=\"swiper-wrapper\"\u003e\n\u003cdiv class=\"swiper-slide\"\u003e\u003cimg decoding=\"async\" src=\"https://creality.com.kw/site/wp-content/uploads/2022/03/slide1.jpg\"\u003e\u003c/p\u003e\n\u003cdiv class=\"fullwidth-caption d-none d-md-block\"\u003e\u003c/div\u003e\n\u003c/p\u003e\u003c/div\u003e\n\u003cdiv class=\"swiper-slide\"\u003e\u003cimg decoding=\"async\" src=\"https://creality.com.kw/site/wp-content/uploads/2022/03/slide2.jpg\"\u003e\u003c/p\u003e\n\u003cdiv class=\"fullwidth-caption d-none d-md-block\"\u003e\u003c/div\u003e\n\u003c/p\u003e\u003c/div\u003e\n\u003c/p\u003e\u003c/div\u003e\n\u003cp\u003e          \u003c!-- Add Pagination --\u003e\u003c/p\u003e\n\u003cdiv class=\"swiper-pagination\"\u003e\u003c/div\u003e\n\u003cp\u003e      \u003c!-- Add Arrows --\u003e\u003c/p\u003e\n\u003cdiv class=\"boxed-next\"\u003e\n\u003cdiv class=\"img-slider-swiper-button-next\"\u003e\u003c/div\u003e\n\u003c/p\u003e\u003c/div\u003e\n\u003cdiv class=\"boxed-prev\"\u003e\n\u003cdiv class=\"img-slider-swiper-button-prev\"\u003e\u003c/div\u003e\n\u003c/p\u003e\u003c/div\u003e\n\u003c/p\u003e\u003c/div\u003e\n\u003cp\u003e  \u003cscript type=\"text/javascript\"\u003e\u003c/p\u003e\n\u003cp\u003e    var auto_play = \u00271\u0027;\n    var slide_duration = \u00273000\u0027;\u003c/p\u003e\n\u003cp\u003e    auto_play = (auto_play==1) ? { delay: slide_duration, disableOnInteraction: false,} : false;\n    //console.log(auto_play);\u003c/p\u003e\n\u003cp\u003e    var swiper = new Swiper(\u0027.img-slider-swiper-auto\u0027, {\n      spaceBetween: 30,\n      //effect: \u0027flip\u0027,\n      effect: \u0027fade\u0027,//for fade effect\n      // effect: \u0027cube\u0027,\n      // cubeEffect: {\n      //   shadow: true,\n      //   slideShadows: true,\n      //   shadowOffset: 20,\n      //   shadowScale: 0.94,\n      // },\u003c/p\u003e\n\u003cp\u003e      centeredSlides: true,\n      autoplay: auto_play,\n      pagination: {\n        el: \u0027.swiper-pagination\u0027,\n        clickable: true,\n      },\n      navigation: {\n        nextEl: \u0027.img-slider-swiper-button-next\u0027,\n        prevEl: \u0027.img-slider-swiper-button-prev\u0027,\n      },\n      keyboard: {\n        enabled: true, //for keyboard control\n      },\n    });\n  \u003c/script\u003e\u003c/div\u003e\n\u003c/p\u003e\n\u003cp\u003e \u003c/p\u003e\n\u003c/p\u003e\n\u003cpre class=\"wp-block-code\"\u003e\u003ccode\u003e\u003c/code\u003e\u003c/pre\u003e\n\u003c/p\u003e\n\u003c/p\u003e\u003c/div\u003e\n\u003c/p\u003e\u003c/div\u003e\n\u003c/p\u003e\u003c/div\u003e\n\u003c/p\u003e\u003c/div\u003e\n\u003c/p\u003e\u003c/div\u003e\n\u003c/section\u003e\n\t\t\u003c/div\u003e\n\t\t",
+                                      "protected":  false
+                                  },
+                      "excerpt":  {
+                                      "rendered":  "",
+                                      "protected":  false
+                                  },
+                      "author":  1,
+                      "featured_media":  0,
+                      "parent":  0,
+                      "menu_order":  0,
+                      "comment_status":  "closed",
+                      "ping_status":  "closed",
+                      "template":  "",
+                      "meta":  {
+                                   "neve_meta_sidebar":  "",
+                                   "neve_meta_container":  "",
+                                   "neve_meta_enable_content_width":  "",
+                                   "neve_meta_content_width":  0,
+                                   "neve_meta_title_alignment":  "",
+                                   "neve_meta_author_avatar":  "",
+                                   "neve_post_elements_order":  "",
+                                   "neve_meta_disable_header":  "",
+                                   "neve_meta_disable_footer":  "",
+                                   "neve_meta_disable_title":  "",
+                                   "_ti_tpc_template_sync":  false,
+                                   "_ti_tpc_template_id":  "",
+                                   "footnotes":  ""
+                               },
+                      "class_list":  [
+                                         "post-5",
+                                         "page",
+                                         "type-page",
+                                         "status-publish",
+                                         "hentry"
+                                     ],
+                      "yoast_head":  "\u003c!-- This site is optimized with the Yoast SEO plugin v25.4 - https://yoast.com/wordpress/plugins/seo/ --\u003e\n\u003ctitle\u003eHome - Creality - Kuwait\u003c/title\u003e\n\u003cmeta name=\"robots\" content=\"index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1\" /\u003e\n\u003clink rel=\"canonical\" href=\"https://creality.com.kw/site/home/\" /\u003e\n\u003cmeta property=\"og:locale\" content=\"en_US\" /\u003e\n\u003cmeta property=\"og:type\" content=\"article\" /\u003e\n\u003cmeta property=\"og:title\" content=\"Home - Creality - Kuwait\" /\u003e\n\u003cmeta property=\"og:url\" content=\"https://creality.com.kw/site/home/\" /\u003e\n\u003cmeta property=\"og:site_name\" content=\"Creality - Kuwait\" /\u003e\n\u003cmeta property=\"article:modified_time\" content=\"2022-05-23T12:52:44+00:00\" /\u003e\n\u003cmeta name=\"twitter:card\" content=\"summary_large_image\" /\u003e\n\u003cscript type=\"application/ld+json\" class=\"yoast-schema-graph\"\u003e{\"@context\":\"https://schema.org\",\"@graph\":[{\"@type\":\"WebPage\",\"@id\":\"https://creality.com.kw/site/home/\",\"url\":\"https://creality.com.kw/site/home/\",\"name\":\"Home - Creality - Kuwait\",\"isPartOf\":{\"@id\":\"https://creality.com.kw/site/#website\"},\"datePublished\":\"2022-03-07T09:15:09+00:00\",\"dateModified\":\"2022-05-23T12:52:44+00:00\",\"breadcrumb\":{\"@id\":\"https://creality.com.kw/site/home/#breadcrumb\"},\"inLanguage\":\"en-US\",\"potentialAction\":[{\"@type\":\"ReadAction\",\"target\":[\"https://creality.com.kw/site/home/\"]}]},{\"@type\":\"BreadcrumbList\",\"@id\":\"https://creality.com.kw/site/home/#breadcrumb\",\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"Home\",\"item\":\"https://creality.com.kw/site/\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"Home\"}]},{\"@type\":\"WebSite\",\"@id\":\"https://creality.com.kw/site/#website\",\"url\":\"https://creality.com.kw/site/\",\"name\":\"Creality - Kuwait\",\"description\":\"\",\"publisher\":{\"@id\":\"https://creality.com.kw/site/#organization\"},\"potentialAction\":[{\"@type\":\"SearchAction\",\"target\":{\"@type\":\"EntryPoint\",\"urlTemplate\":\"https://creality.com.kw/site/?s={search_term_string}\"},\"query-input\":{\"@type\":\"PropertyValueSpecification\",\"valueRequired\":true,\"valueName\":\"search_term_string\"}}],\"inLanguage\":\"en-US\"},{\"@type\":\"Organization\",\"@id\":\"https://creality.com.kw/site/#organization\",\"name\":\"Creality - Kuwait\",\"url\":\"https://creality.com.kw/site/\",\"logo\":{\"@type\":\"ImageObject\",\"inLanguage\":\"en-US\",\"@id\":\"https://creality.com.kw/site/#/schema/logo/image/\",\"url\":\"https://creality.com.kw/site/wp-content/uploads/2025/07/cropped-fc05e3d3e33b67a2ec43f3926dfbad55-1.jpg\",\"contentUrl\":\"https://creality.com.kw/site/wp-content/uploads/2025/07/cropped-fc05e3d3e33b67a2ec43f3926dfbad55-1.jpg\",\"width\":512,\"height\":512,\"caption\":\"Creality - Kuwait\"},\"image\":{\"@id\":\"https://creality.com.kw/site/#/schema/logo/image/\"}}]}\u003c/script\u003e\n\u003c!-- / Yoast SEO plugin. --\u003e",
+                      "yoast_head_json":  {
+                                              "title":  "Home - Creality - Kuwait",
+                                              "robots":  {
+                                                             "index":  "index",
+                                                             "follow":  "follow",
+                                                             "max-snippet":  "max-snippet:-1",
+                                                             "max-image-preview":  "max-image-preview:large",
+                                                             "max-video-preview":  "max-video-preview:-1"
+                                                         },
+                                              "canonical":  "https://creality.com.kw/site/home/",
+                                              "og_locale":  "en_US",
+                                              "og_type":  "article",
+                                              "og_title":  "Home - Creality - Kuwait",
+                                              "og_url":  "https://creality.com.kw/site/home/",
+                                              "og_site_name":  "Creality - Kuwait",
+                                              "article_modified_time":  "2022-05-23T12:52:44+00:00",
+                                              "twitter_card":  "summary_large_image",
+                                              "schema":  {
+                                                             "@context":  "https://schema.org",
+                                                             "@graph":  [
+                                                                            {
+                                                                                "@type":  "WebPage",
+                                                                                "@id":  "https://creality.com.kw/site/home/",
+                                                                                "url":  "https://creality.com.kw/site/home/",
+                                                                                "name":  "Home - Creality - Kuwait",
+                                                                                "isPartOf":  "@{@id=https://creality.com.kw/site/#website}",
+                                                                                "datePublished":  "2022-03-07T09:15:09+00:00",
+                                                                                "dateModified":  "2022-05-23T12:52:44+00:00",
+                                                                                "breadcrumb":  "@{@id=https://creality.com.kw/site/home/#breadcrumb}",
+                                                                                "inLanguage":  "en-US",
+                                                                                "potentialAction":  ""
+                                                                            },
+                                                                            {
+                                                                                "@type":  "BreadcrumbList",
+                                                                                "@id":  "https://creality.com.kw/site/home/#breadcrumb",
+                                                                                "itemListElement":  " "
+                                                                            },
+                                                                            {
+                                                                                "@type":  "WebSite",
+                                                                                "@id":  "https://creality.com.kw/site/#website",
+                                                                                "url":  "https://creality.com.kw/site/",
+                                                                                "name":  "Creality - Kuwait",
+                                                                                "description":  "",
+                                                                                "publisher":  "@{@id=https://creality.com.kw/site/#organization}",
+                                                                                "potentialAction":  "",
+                                                                                "inLanguage":  "en-US"
+                                                                            },
+                                                                            {
+                                                                                "@type":  "Organization",
+                                                                                "@id":  "https://creality.com.kw/site/#organization",
+                                                                                "name":  "Creality - Kuwait",
+                                                                                "url":  "https://creality.com.kw/site/",
+                                                                                "logo":  "@{@type=ImageObject; inLanguage=en-US; @id=https://creality.com.kw/site/#/schema/logo/image/; url=https://creality.com.kw/site/wp-content/uploads/2025/07/cropped-fc05e3d3e33b67a2ec43f3926dfbad55-1.jpg; contentUrl=https://creality.com.kw/site/wp-content/uploads/2025/07/cropped-fc05e3d3e33b67a2ec43f3926dfbad55-1.jpg; width=512; height=512; caption=Creality - Kuwait}",
+                                                                                "image":  "@{@id=https://creality.com.kw/site/#/schema/logo/image/}"
+                                                                            }
+                                                                        ]
+                                                         }
+                                          },
+                      "_links":  {
+                                     "self":  [
+                                                  {
+                                                      "href":  "https://creality.com.kw/site/wp-json/wp/v2/pages/5",
+                                                      "targetHints":  {
+                                                                          "allow":  "GET"
+                                                                      }
+                                                  }
+                                              ],
+                                     "collection":  [
+                                                        {
+                                                            "href":  "https://creality.com.kw/site/wp-json/wp/v2/pages"
+                                                        }
+                                                    ],
+                                     "about":  [
+                                                   {
+                                                       "href":  "https://creality.com.kw/site/wp-json/wp/v2/types/page"
+                                                   }
+                                               ],
+                                     "author":  [
+                                                    {
+                                                        "embeddable":  true,
+                                                        "href":  "https://creality.com.kw/site/wp-json/wp/v2/users/1"
+                                                    }
+                                                ],
+                                     "replies":  [
+                                                     {
+                                                         "embeddable":  true,
+                                                         "href":  "https://creality.com.kw/site/wp-json/wp/v2/comments?post=5"
+                                                     }
+                                                 ],
+                                     "version-history":  [
+                                                             {
+                                                                 "count":  45,
+                                                                 "href":  "https://creality.com.kw/site/wp-json/wp/v2/pages/5/revisions"
+                                                             }
+                                                         ],
+                                     "predecessor-version":  [
+                                                                 {
+                                                                     "id":  31013,
+                                                                     "href":  "https://creality.com.kw/site/wp-json/wp/v2/pages/5/revisions/31013"
+                                                                 }
+                                                             ],
+                                     "wp:attachment":  [
+                                                           {
+                                                               "href":  "https://creality.com.kw/site/wp-json/wp/v2/media?parent=5"
+                                                           }
+                                                       ],
+                                     "curies":  [
+                                                    {
+                                                        "name":  "wp",
+                                                        "href":  "https://api.w.org/{rel}",
+                                                        "templated":  true
+                                                    }
+                                                ]
+                                 }
+                  }
+              ],
+    "Count":  1
+}

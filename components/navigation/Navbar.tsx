@@ -84,29 +84,30 @@ export default function Navbar() {
             />
           </Link>
           <div className="hidden lg:flex lg:items-center lg:gap-6">
+            <StoreSwitcher />
             <div
               className={`relative ${pathname?.startsWith("/category") || pathname === "/store"
                 ? "text-[#0b0b0b] after:absolute after:-bottom-2 after:left-0 after:h-[2px] after:w-full after:bg-[#7bbf6a]"
                 : "text-gray-600"
-              }`}
+                }`}
             >
-              <MegaMenu label="Store" />
+              <MegaMenu label="Products" />
             </div>
             <Link
-              href="/printing-service"
-              className={`relative text-sm font-medium transition hover:text-[#0b0b0b] ${pathname === "/printing-service"
+              href="/downloads"
+              className={`relative text-sm font-medium transition hover:text-[#0b0b0b] ${pathname?.startsWith("/downloads")
                 ? "text-[#0b0b0b] after:absolute after:-bottom-2 after:left-0 after:h-[2px] after:w-full after:bg-[#7bbf6a]"
                 : "text-gray-600"
-              }`}
+                }`}
             >
-              Printing Service
+              Downloads
             </Link>
             <Link
               href="/support"
               className={`relative text-sm font-medium transition hover:text-[#0b0b0b] ${pathname === "/support"
                 ? "text-[#0b0b0b] after:absolute after:-bottom-2 after:left-0 after:h-[2px] after:w-full after:bg-[#7bbf6a]"
                 : "text-gray-600"
-              }`}
+                }`}
             >
               Support
             </Link>
@@ -114,7 +115,6 @@ export default function Navbar() {
         </div>
 
         <div className="hidden items-center gap-4 lg:flex">
-          <StoreSwitcher />
           <Link
             href="/cart"
             className="relative text-[#0b0b0b] transition hover:text-black"

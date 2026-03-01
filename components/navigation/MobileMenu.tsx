@@ -58,21 +58,28 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
         <div className="space-y-1">
           <Link
             href="/store"
-            className="block rounded-lg px-2 py-3 text-base font-semibold text-gray-900 hover:bg-gray-50 transition"
+            className="block rounded-lg px-2 py-2 text-base font-semibold text-gray-900 hover:bg-gray-50 transition"
             onClick={onClose}
           >
             Store
           </Link>
           <Link
             href="/printing-service"
-            className="block rounded-lg px-2 py-3 text-base font-semibold text-gray-900 hover:bg-gray-50 transition"
+            className="block rounded-lg px-2 py-2 text-base font-semibold text-gray-900 hover:bg-gray-50 transition"
             onClick={onClose}
           >
             Printing Service
           </Link>
           <Link
+            href="/downloads"
+            className="block rounded-lg px-2 py-2 text-base font-semibold text-gray-900 hover:bg-gray-50 transition"
+            onClick={onClose}
+          >
+            Downloads
+          </Link>
+          <Link
             href="/support"
-            className="block rounded-lg px-2 py-3 text-base font-semibold text-gray-900 hover:bg-gray-50 transition"
+            className="block rounded-lg px-2 py-2 text-base font-semibold text-gray-900 hover:bg-gray-50 transition"
             onClick={onClose}
           >
             Support
@@ -80,7 +87,7 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
         </div>
 
         {/* Category accordion */}
-        <div className="mt-6 space-y-2">
+        <div className="mt-4 space-y-1">
           <p className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-gray-400">
             Browse by category
           </p>
