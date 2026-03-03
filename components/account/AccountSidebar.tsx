@@ -24,11 +24,10 @@ export default function AccountSidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition ${
-                isActive
+              className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition ${isActive
                   ? "bg-black text-white"
                   : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-              }`}
+                }`}
             >
               {item.label}
             </Link>

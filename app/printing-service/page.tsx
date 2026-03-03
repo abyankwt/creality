@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import PrintEstimator from "@/components/printing-service/PrintEstimator";
 import QuoteForm from "@/components/printing-service/QuoteForm";
 import FaqAccordion from "@/components/printing-service/FaqAccordion";
 
@@ -125,10 +126,10 @@ export default function PrintingServicePage() {
             </div>
             <div className="flex flex-wrap gap-3">
               <a
-                href="#quote"
+                href="#estimate"
                 className="inline-flex items-center justify-center rounded-lg bg-black px-6 py-3 text-xs font-semibold uppercase tracking-[0.2em] text-white"
               >
-                Get a Quote
+                Get Instant Estimate
               </a>
               <Link
                 href="/support"
@@ -234,8 +235,27 @@ export default function PrintingServicePage() {
         </div>
       </section>
 
+      {/* Automated Estimator */}
+      <section id="estimate" className="border-b border-gray-200 bg-white py-10">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <PrintEstimator />
+        </div>
+      </section>
+
+      {/* Manual Quote Form */}
       <section id="quote" className="border-b border-gray-200 bg-[#f8f8f8] py-10">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="mb-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-400">
+              Custom Projects
+            </p>
+            <h2 className="mt-2 text-lg font-semibold text-gray-900">
+              Need a custom quote?
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              For complex projects, batch orders, or specific requirements, submit a manual quote request.
+            </p>
+          </div>
           <QuoteForm />
         </div>
       </section>
