@@ -5,17 +5,14 @@ export const runtime = "nodejs";
 
 const WP_BASE = process.env.WC_BASE_URL?.replace(/\/$/, "") ?? "";
 
-function getCredentials() {
-    const consumerKey = process.env.WC_CONSUMER_KEY;
-    const consumerSecret = process.env.WC_CONSUMER_SECRET;
-    if (!consumerKey || !consumerSecret) throw new Error("Missing WooCommerce credentials");
-    return { consumerKey, consumerSecret };
-}
-
 /**
  * POST /api/print/analyze
- * Public endpoint — no login required for getting a price estimate.
  * Forwards multipart file upload to the WordPress print estimator plugin.
+ * Public endpoint — no user auth required for estimation.
+ * Auth is enforced on the add-to-cart step instead.
+ *
+ * Note: The WP plugin endpoint is also public (__return_true),
+ * so no credentials are needed for this call.
  */
 export async function POST(request: NextRequest) {
     try {
@@ -31,13 +28,9 @@ export async function POST(request: NextRequest) {
         const wpForm = new FormData();
         wpForm.append("file", file, file.name);
 
-        const { consumerKey, consumerSecret } = getCredentials();
-        const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64");
-
         const wpRes = await fetch(`${WP_BASE}/wp-json/creality-print/v1/analyze`, {
             method: "POST",
             headers: {
-                Authorization: `Basic ${auth}`,
                 Accept: "application/json",
             },
             body: wpForm,

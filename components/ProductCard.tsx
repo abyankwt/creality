@@ -64,6 +64,7 @@ export default function ProductCard({
     );
   }, [product?.categories]);
   const isCompared = product?.id ? isSelected(product.id) : false;
+  const [addedFeedback, setAddedFeedback] = useState(false);
 
   const handleAddToCart = async (): Promise<void> => {
     if (!product?.id) {
@@ -74,7 +75,8 @@ export default function ProductCard({
     try {
       setLoading(true);
       await addItem(product.id, 1);
-      window.location.href = process.env.NEXT_PUBLIC_WC_CHECKOUT_URL || "https://creality.com.kw/site/checkout/";
+      setAddedFeedback(true);
+      setTimeout(() => setAddedFeedback(false), 2000);
     } catch (error) {
       console.error("Failed to add to cart:", error);
     } finally {
@@ -148,7 +150,7 @@ export default function ProductCard({
             : "cursor-not-allowed border border-gray-200 bg-transparent text-gray-400"
             }`}
         >
-          {loading ? "Adding…" : "Add to cart"}
+          {loading ? "Adding…" : addedFeedback ? "Added ✓" : "Add to cart"}
         </button>
 
         {isPrinter && product?.id && (

@@ -239,7 +239,6 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     try {
       setAdding(true);
       await addItem(product.id, quantity);
-      window.location.href = process.env.NEXT_PUBLIC_WC_CHECKOUT_URL || "https://creality.com.kw/site/checkout/";
       await refreshCart();
       setToast({ message: "Added to cart.", type: "success" });
     } catch {
@@ -253,7 +252,6 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     try {
       setAdding(true);
       await addItem(product.id, 1);
-      window.location.href = process.env.NEXT_PUBLIC_WC_CHECKOUT_URL || "https://creality.com.kw/site/checkout/";
       await refreshCart();
       setToast({ message: "Added to cart.", type: "success" });
     } catch {

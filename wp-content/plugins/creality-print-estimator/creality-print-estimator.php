@@ -194,24 +194,8 @@ final class Creality_Print_Estimator {
         register_rest_route( 'creality-print/v1', '/analyze', array(
             'methods'             => WP_REST_Server::CREATABLE,
             'callback'            => array( $this, 'api_analyze' ),
-            'permission_callback' => array( $this, 'api_check_auth' ),
+            'permission_callback' => '__return_true', // Public endpoint — auth handled by Next.js proxy.
         ) );
-    }
-
-    /**
-     * Permission: user must be logged in.
-     *
-     * @return bool|WP_Error
-     */
-    public function api_check_auth() {
-        if ( ! is_user_logged_in() ) {
-            return new WP_Error(
-                'rest_not_logged_in',
-                __( 'You must be logged in to use the print estimator.', 'creality-print-estimator' ),
-                array( 'status' => 401 )
-            );
-        }
-        return true;
     }
 
     /*--------------------------------------------------------------
@@ -282,7 +266,7 @@ final class Creality_Print_Estimator {
         }
 
         /*--- Analyze model ---*/
-        $analysis = self::analyze_model( $dest_path );
+        $analysis = self::analyze_model( $dest_path, $safe_name, $file['size'] );
 
         /*--- Find compatible printers ---*/
         $compatible = self::match_printers(
@@ -295,7 +279,7 @@ final class Creality_Print_Estimator {
         $costs = self::calculate_costs( $analysis['material_grams'] );
 
         /*--- Save to database ---*/
-        $user_id = get_current_user_id();
+        $user_id = get_current_user_id(); // Returns 0 for guest users.
         $table   = self::table_name();
 
         $printer_names = array_map( function ( $p ) {
@@ -386,13 +370,15 @@ final class Creality_Print_Estimator {
      * Phase 1: mock analysis with realistic random values.
      * Phase 2: will integrate actual slicer API.
      *
-     * @param string $file_path Absolute path to the uploaded file.
+     * @param string $file_path     Absolute path to the uploaded file.
+     * @param string $original_name Original uploaded filename (before wp_unique_filename).
+     * @param int    $file_size     Size of the uploaded file in bytes.
      * @return array Analysis results.
      */
-    private static function analyze_model( $file_path ) {
-        // Use file size as seed for repeatable "random" values per file.
-        $file_size = filesize( $file_path );
-        $seed      = crc32( basename( $file_path ) . $file_size );
+    private static function analyze_model( $file_path, $original_name, $file_size ) {
+        // Seed with original filename + size so the SAME file always
+        // produces the SAME estimate, regardless of upload count.
+        $seed = crc32( $original_name . $file_size );
         mt_srand( $seed );
 
         // Generate realistic bounding box (10–350 mm per axis).

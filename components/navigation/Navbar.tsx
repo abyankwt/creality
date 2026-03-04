@@ -2,18 +2,21 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, ShoppingBag, User } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import type { ApiResponse, UserSession } from "@/lib/types";
+import type { CategoryNode } from "@/lib/categories";
 import StoreSwitcher from "./StoreSwitcher";
+import MegaMenu from "./MegaMenu";
+import MobileMenu from "./MobileMenu";
 
-const MegaMenu = dynamic(() => import("./MegaMenu"), { ssr: false });
-const MobileMenu = dynamic(() => import("./MobileMenu"), { ssr: false });
+type NavbarProps = {
+  categories?: CategoryNode[];
+};
 
-export default function Navbar() {
+export default function Navbar({ categories = [] }: NavbarProps) {
   const { cart } = useCart();
   const itemCount = cart?.items_count ?? 0;
   const pathname = usePathname();
@@ -91,7 +94,7 @@ export default function Navbar() {
                 : "text-gray-600"
                 }`}
             >
-              <MegaMenu label="Products" />
+              <MegaMenu label="Products" categories={categories} />
             </div>
             <Link
               href="/downloads"
@@ -116,7 +119,7 @@ export default function Navbar() {
 
         <div className="hidden items-center gap-4 lg:flex">
           <Link
-            href={process.env.NEXT_PUBLIC_WC_CHECKOUT_URL || "https://creality.com.kw/site/checkout/"}
+            href="/api/store/checkout"
             className="relative text-[#0b0b0b] transition hover:text-black"
             aria-label="Cart"
           >
@@ -195,7 +198,10 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-3 lg:hidden">
-          <Link href={process.env.NEXT_PUBLIC_WC_CHECKOUT_URL || "https://creality.com.kw/site/checkout/"} className="relative rounded-md border border-gray-200 p-2">
+          <Link
+            href="/api/store/checkout"
+            className="relative rounded-md border border-gray-200 p-2"
+          >
             <ShoppingBag className="h-5 w-5 text-gray-700" />
             {itemCount > 0 && (
               <span className="absolute -right-2 -top-2 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-black px-1 text-[10px] font-semibold text-white">
@@ -206,13 +212,20 @@ export default function Navbar() {
           <Link href="/account" className="rounded-md border border-gray-200 p-2">
             <User className="h-5 w-5 text-gray-700" />
           </Link>
-          <Link href="/store" className="flex items-center justify-center rounded-md border border-gray-200 px-3 py-[7px] text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:text-[#0b0b0b]">
+          <Link
+            href="/store"
+            className="flex items-center justify-center rounded-md border border-gray-200 px-3 py-[7px] text-sm font-medium text-gray-700 transition hover:bg-gray-50 hover:text-[#0b0b0b]"
+          >
             Store
           </Link>
         </div>
       </div>
 
-      <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <MobileMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        categories={categories}
+      />
     </header>
   );
 }

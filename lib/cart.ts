@@ -1,17 +1,16 @@
 /* ─────────────────────────────────────────────────────────────
  * lib/cart.ts — Client-side WooCommerce Store API cart helpers
  *
- * Every request goes through Next.js API routes (/api/store/…).
- * The nonce and cart-token are stored in-memory and sent/received
- * automatically via response headers.
+ * Every request goes through Next.js API proxy routes (/api/store/cart/…).
+ * The Cart-Token is persisted in httpOnly cookies by the proxy,
+ * so the cart survives page navigations.
  * ───────────────────────────────────────────────────────────── */
 
 const NONCE_HEADER = "Nonce";
 const CART_TOKEN_HEADER = "Cart-Token";
 
-// ── In-memory stores ──
+// ── In-memory nonce (refreshed from proxy response headers) ──
 let nonce = "";
-let cartToken = "";
 
 export function getNonce(): string {
   return nonce;
@@ -118,13 +117,14 @@ export type CartResponse = {
   errors?: Array<{ code: string; message: string }>;
 };
 
-// ── Core fetch wrapper ──
+// ── Core fetch wrapper — routes through Next.js proxy ──
 
 async function fetchStoreApi<T>(
   path: string,
   init?: RequestInit
 ): Promise<T> {
-  const baseUrl = process.env.NEXT_PUBLIC_WC_API || "https://creality.com.kw/site/wp-json/wc/store/v1";
+  // Use the local Next.js API proxy — this persists Cart-Token in cookies
+  const proxyBase = "/api/store";
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -134,24 +134,17 @@ async function fetchStoreApi<T>(
   if (nonce) {
     headers[NONCE_HEADER] = nonce;
   }
-  if (cartToken) {
-    headers[CART_TOKEN_HEADER] = cartToken;
-  }
 
-  const response = await fetch(`${baseUrl}/${path}`, {
+  const response = await fetch(`${proxyBase}/${path}`, {
     ...init,
     credentials: "include",
     headers,
   });
 
+  // Capture nonce from proxy response for subsequent requests
   const responseNonce = response.headers.get(NONCE_HEADER);
   if (responseNonce) {
     nonce = responseNonce;
-  }
-
-  const responseCartToken = response.headers.get(CART_TOKEN_HEADER);
-  if (responseCartToken) {
-    cartToken = responseCartToken;
   }
 
   if (!response.ok) {
