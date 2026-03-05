@@ -1,141 +1,211 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { SESSION_COOKIE_NAME, verifySession } from "@/lib/auth-session";
 
 const WC_CART_TOKEN_COOKIE = "wc_cart_token";
+const WC_NONCE_COOKIE = "wc_nonce";
 
-type StoreCartItem = {
-    id: number;
-    quantity: number;
-    name?: string;
-    prices?: {
-        price: string;
-        currency_minor_unit?: number;
+type CheckoutBody = {
+    billing_address: {
+        first_name: string;
+        last_name: string;
+        email: string;
+        phone: string;
+        country: string;
+        state: string;
+        city: string;
+        address_1: string;
+        address_2?: string;
+        postcode?: string;
+    };
+    shipping_address?: {
+        first_name: string;
+        last_name: string;
+        country: string;
+        state: string;
+        city: string;
+        address_1: string;
+        address_2?: string;
+        postcode?: string;
+    };
+    payment_method: string;
+};
+
+type WooCheckoutResponse = {
+    order_id: number;
+    status: string;
+    order_key: string;
+    customer_note: string;
+    payment_result: {
+        payment_status: string;
+        payment_details: Array<{ key: string; value: string }>;
+        redirect_url: string;
     };
 };
 
-type StoreCartResponse = {
-    items: StoreCartItem[];
-    items_count: number;
-};
-
-type WCOrderResponse = {
-    id: number;
-    order_key: string;
-    status: string;
-};
-
 /**
- * GET /api/store/checkout
+ * POST /api/store/checkout
  *
- * Bridge between the Store API cart and WooCommerce checkout:
- * 1. Reads the current cart from Store API using the cookie-persisted Cart-Token
- * 2. Creates a WooCommerce pending order with those line items
- * 3. Redirects the user to the WooCommerce order-pay page for payment
+ * Headless checkout using the WooCommerce Store API:
+ * 1. Receives billing info + payment method from the Next.js checkout page
+ * 2. Forwards to WooCommerce Store API POST /checkout with Cart-Token
+ * 3. Returns the payment gateway redirect URL to the frontend
  *
- * This way the customer stays on the Next.js frontend until checkout.
+ * The customer never sees the old WooCommerce site.
  */
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function POST(request: NextRequest): Promise<NextResponse> {
     const baseUrl = process.env.WC_BASE_URL?.replace(/\/$/, "");
-    const consumerKey = process.env.WC_CONSUMER_KEY;
-    const consumerSecret = process.env.WC_CONSUMER_SECRET;
 
-    if (!baseUrl || !consumerKey || !consumerSecret) {
+    if (!baseUrl) {
         return NextResponse.json(
             { error: "Missing WooCommerce configuration." },
             { status: 500 }
         );
     }
 
-    // Step 1: Read the cart from Store API using the cookie-stored Cart-Token
-    const cartToken = request.cookies.get(WC_CART_TOKEN_COOKIE)?.value;
-
-    const cartHeaders: Record<string, string> = {
-        Accept: "application/json",
-    };
-    if (cartToken) {
-        cartHeaders["Cart-Token"] = cartToken;
-    }
-
-    let cart: StoreCartResponse;
+    // Parse the checkout body from the frontend
+    let body: CheckoutBody;
     try {
-        const cartRes = await fetch(`${baseUrl}/wp-json/wc/store/cart`, {
-            headers: cartHeaders,
-            cache: "no-store",
-        });
-
-        if (!cartRes.ok) {
-            console.error(`[Checkout] Failed to read cart: ${cartRes.status}`);
-            // Fallback: redirect to the store page
-            return NextResponse.redirect(new URL("/store", request.url));
-        }
-
-        cart = (await cartRes.json()) as StoreCartResponse;
-    } catch (error) {
-        console.error("[Checkout] Error reading cart:", error);
-        return NextResponse.redirect(new URL("/store", request.url));
-    }
-
-    // If cart is empty, redirect back to store
-    if (!cart.items || cart.items.length === 0) {
-        return NextResponse.redirect(new URL("/store", request.url));
-    }
-
-    // Step 2: Create a WooCommerce pending order with the cart items
-    const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64");
-
-    const lineItems = cart.items.map((item) => {
-        // Store API prices are in minor units (e.g., cents)
-        const minorUnit = item.prices?.currency_minor_unit ?? 3;
-        const priceNum = Number(item.prices?.price ?? 0);
-        const realPrice = priceNum / Math.pow(10, minorUnit);
-
-        return {
-            product_id: item.id,
-            quantity: item.quantity,
-            // Let WooCommerce determine the price from the product
-            // Only override if you need custom pricing
-        };
-    });
-
-    const orderPayload = {
-        status: "pending",
-        set_paid: false,
-        line_items: lineItems,
-    };
-
-    let order: WCOrderResponse;
-    try {
-        const orderRes = await fetch(`${baseUrl}/wp-json/wc/v3/orders`, {
-            method: "POST",
-            headers: {
-                Authorization: `Basic ${auth}`,
-                "Content-Type": "application/json",
-                Accept: "application/json",
-            },
-            body: JSON.stringify(orderPayload),
-        });
-
-        if (!orderRes.ok) {
-            const errText = await orderRes.text();
-            console.error(`[Checkout] Failed to create order: ${orderRes.status}`, errText);
-            return NextResponse.json(
-                { error: "Failed to create checkout order." },
-                { status: 500 }
-            );
-        }
-
-        order = (await orderRes.json()) as WCOrderResponse;
-    } catch (error) {
-        console.error("[Checkout] Error creating order:", error);
+        body = (await request.json()) as CheckoutBody;
+    } catch {
         return NextResponse.json(
-            { error: "Failed to create checkout order." },
-            { status: 500 }
+            { error: "Invalid request body." },
+            { status: 400 }
         );
     }
 
-    // Step 3: Build the WooCommerce order-pay URL and redirect
-    const checkoutBase = process.env.NEXT_PUBLIC_WC_CHECKOUT_URL?.replace(/\/$/, "")
-        || `${baseUrl}/checkout`;
-    const payUrl = `${checkoutBase}/order-pay/${order.id}/?pay_for_order=true&key=${order.order_key}`;
+    // Get cart token and nonce from cookies
+    const cartToken = request.cookies.get(WC_CART_TOKEN_COOKIE)?.value;
+    const nonce = request.cookies.get(WC_NONCE_COOKIE)?.value;
 
-    return NextResponse.redirect(payUrl);
+    if (!cartToken) {
+        return NextResponse.json(
+            { error: "No cart session found. Please add items to your cart." },
+            { status: 400 }
+        );
+    }
+
+    // Verify the user is logged in
+    const sessionToken = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+    let customerId: number | undefined;
+    if (sessionToken) {
+        const session = await verifySession(sessionToken);
+        if (session) {
+            customerId = session.userId;
+        }
+    }
+
+    if (!customerId) {
+        return NextResponse.json(
+            { error: "Please log in or register before placing an order." },
+            { status: 401 }
+        );
+    }
+
+    // Build headers for WooCommerce Store API
+    const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "Cart-Token": cartToken,
+    };
+
+    if (nonce) {
+        headers["Nonce"] = nonce;
+    }
+
+    // Use shipping = billing if not provided
+    const shippingAddress = body.shipping_address || {
+        first_name: body.billing_address.first_name,
+        last_name: body.billing_address.last_name,
+        country: body.billing_address.country,
+        state: body.billing_address.state || "",
+        city: body.billing_address.city,
+        address_1: body.billing_address.address_1,
+        address_2: body.billing_address.address_2 || "",
+        postcode: body.billing_address.postcode || "",
+    };
+
+    // Build the Store API checkout payload
+    const checkoutPayload = {
+        billing_address: {
+            ...body.billing_address,
+            state: body.billing_address.state || "",
+            address_2: body.billing_address.address_2 || "",
+            postcode: body.billing_address.postcode || "",
+        },
+        shipping_address: shippingAddress,
+        payment_method: body.payment_method,
+        customer_id: customerId,
+        payment_data: [] as Array<{ key: string; value: string }>,
+    };
+
+    // Call the WooCommerce Store API checkout endpoint
+    let wooResponse: Response;
+    try {
+        wooResponse = await fetch(
+            `${baseUrl}/wp-json/wc/store/v1/checkout`,
+            {
+                method: "POST",
+                headers,
+                body: JSON.stringify(checkoutPayload),
+                cache: "no-store",
+            }
+        );
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : "Network error";
+        console.error("[Checkout] Failed to reach WooCommerce:", msg);
+        return NextResponse.json(
+            { error: `Failed to reach payment system: ${msg}` },
+            { status: 502 }
+        );
+    }
+
+    const responseText = await wooResponse.text();
+    let responseData: WooCheckoutResponse | { message?: string; code?: string };
+
+    try {
+        responseData = JSON.parse(responseText);
+    } catch {
+        console.error("[Checkout] Invalid JSON from WooCommerce:", responseText.slice(0, 200));
+        return NextResponse.json(
+            { error: "Invalid response from payment system." },
+            { status: 502 }
+        );
+    }
+
+    if (!wooResponse.ok) {
+        const errMsg =
+            (responseData as { message?: string }).message ||
+            "Checkout failed. Please try again.";
+        console.error(`[Checkout] WooCommerce error ${wooResponse.status}:`, errMsg);
+        return NextResponse.json(
+            { error: errMsg },
+            { status: wooResponse.status }
+        );
+    }
+
+    // Success — return the payment redirect URL
+    const checkout = responseData as WooCheckoutResponse;
+    const redirectUrl = checkout.payment_result?.redirect_url;
+
+    if (!redirectUrl) {
+        // Order was created but no redirect needed (e.g., free order)
+        return NextResponse.json({
+            success: true,
+            order_id: checkout.order_id,
+            redirect_url: `/order-success?order=${checkout.order_id}`,
+        });
+    }
+
+    // Clear the cart token since the order has been placed
+    const res = NextResponse.json({
+        success: true,
+        order_id: checkout.order_id,
+        redirect_url: redirectUrl,
+    });
+
+    // Clear cart cookies after successful checkout
+    res.cookies.delete(WC_CART_TOKEN_COOKIE);
+    res.cookies.delete(WC_NONCE_COOKIE);
+
+    return res;
 }

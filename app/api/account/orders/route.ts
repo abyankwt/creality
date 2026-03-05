@@ -29,6 +29,19 @@ export async function GET(request: NextRequest) {
       date: order.date_created,
       total: order.total,
       currency: order.currency,
+      line_items: order.line_items?.map((item) => ({
+        id: item.id,
+        name: item.name,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        subtotal: item.subtotal,
+        total: item.total,
+        price: item.price,
+        image: item.image,
+      })),
+      billing: order.billing,
+      shipping: order.shipping,
+      payment_method_title: order.payment_method_title,
     }));
 
     return NextResponse.json(apiSuccess(orders));

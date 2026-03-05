@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import LogoutButton from "./LogoutButton";
 
 const navItems = [
   { href: "/account", label: "Dashboard" },
@@ -34,6 +35,16 @@ export default function AccountSidebar() {
           );
         })}
       </nav>
+
+      <div className="mt-6 border-t border-gray-100 pt-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-400">
+          Profile
+        </p>
+        <p className="mt-2 text-xs text-gray-500">Sign out of your account</p>
+        <div className="mt-3">
+          <LogoutButton fullWidth />
+        </div>
+      </div>
     </aside>
   );
 }

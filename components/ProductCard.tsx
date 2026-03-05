@@ -24,6 +24,7 @@ type ProductCardProps = {
   price: number;
   slug: string;
   onAddToCart?: () => void;
+  priority?: boolean;
 };
 
 const formatPrice = (value: number) =>
@@ -42,6 +43,8 @@ export default function ProductCard({
   title,
   price,
   slug,
+  onAddToCart,
+  priority = false,
 }: ProductCardProps) {
   const { addItem } = useCart();
   const { isSelected, toggleItem, canAddMore } = useCompare();
@@ -76,6 +79,7 @@ export default function ProductCard({
       setLoading(true);
       await addItem(product.id, 1);
       setAddedFeedback(true);
+      onAddToCart?.();
       setTimeout(() => setAddedFeedback(false), 2000);
     } catch (error) {
       console.error("Failed to add to cart:", error);
@@ -98,21 +102,22 @@ export default function ProductCard({
   };
 
   return (
-    <article className="group rounded-3xl border border-gray-200 bg-white transition-all duration-200 hover:-translate-y-1 hover:shadow-sm">
+    <article className="group rounded-2xl border border-gray-200 bg-white p-2 transition-all duration-200 hover:shadow-sm">
       <Link href={`/product/${slug}`} className="block" aria-label={`View ${title}`}>
-        <div className="relative h-44 overflow-hidden rounded-t-3xl bg-gray-100 md:h-56">
+        <div className="relative mx-auto aspect-square w-full max-w-[140px] overflow-hidden rounded-xl bg-gray-100 md:max-w-[180px]">
           <Image
             src={resolvedImage}
             alt={resolvedAlt}
             fill
-            sizes="(max-width: 768px) 100vw, 25vw"
+            sizes="(max-width: 419px) 50vw, (max-width: 767px) 33vw, (max-width: 1023px) 33vw, 25vw"
             className="object-cover transition duration-300 group-hover:scale-[1.03]"
-            loading="lazy"
+            loading={priority ? undefined : "lazy"}
+            priority={priority}
           />
           {/* Stock badge — top right */}
-          <div className="absolute right-2.5 top-2.5 z-10">
+          <div className="absolute right-1.5 top-1.5 z-10">
             <span
-              className={`inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold ${isAvailable ? "text-green-700" : "text-gray-500"
+              className={`inline-flex items-center gap-1 rounded-full bg-white/90 px-1.5 py-0.5 text-[9px] font-semibold ${isAvailable ? "text-green-700" : "text-gray-500"
                 }`}
             >
               <span
@@ -125,16 +130,16 @@ export default function ProductCard({
         </div>
       </Link>
 
-      <div className="flex flex-col gap-2.5 px-3.5 pb-4 pt-3.5 md:gap-3 md:px-4 md:pb-5 md:pt-4">
-        <div className="space-y-1">
-          <p className="text-[10px] uppercase tracking-wide text-gray-400">
+      <div className="flex flex-col gap-2 pt-2">
+        <div className="space-y-0.5">
+          <p className="text-[9px] uppercase tracking-wide text-gray-400">
             Creality Kuwait
           </p>
-          <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-text md:text-base">{title}</h3>
+          <h3 className="line-clamp-2 min-h-[2.5rem] text-xs font-semibold leading-snug text-text sm:text-sm">{title}</h3>
         </div>
 
         <div className="flex items-center justify-between">
-          <span className="text-base font-bold text-text md:text-xl">
+          <span className="text-sm font-bold text-text sm:text-base">
             {formatPrice(price)}
           </span>
         </div>
@@ -145,21 +150,38 @@ export default function ProductCard({
           disabled={!isAvailable || loading}
           aria-disabled={!isAvailable || loading}
           aria-label={`Add ${title} to cart`}
-          className={`mt-auto w-full rounded-xl px-4 py-2.5 text-sm font-semibold transition duration-150 ${isAvailable
+          className={`mt-auto flex min-h-10 w-full items-center justify-center rounded-lg px-3 py-2 text-xs font-semibold transition duration-150 ${isAvailable
             ? "bg-[#6BBE45] text-white hover:bg-[#5AA73C]"
             : "cursor-not-allowed border border-gray-200 bg-transparent text-gray-400"
             }`}
         >
-          {loading ? "Adding…" : addedFeedback ? "Added ✓" : "Add to cart"}
+          {loading ? (
+            <span className="flex items-center gap-1.5">
+              <svg
+                className="h-3.5 w-3.5 animate-spin"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="10" className="opacity-25" stroke="currentColor" strokeWidth="4" />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
+              </svg>
+              Adding...
+            </span>
+          ) : addedFeedback ? "Added ✓" : "Add to cart"}
         </button>
 
         {isPrinter && product?.id && (
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <button
               type="button"
               onClick={handleCompare}
               disabled={!isCompared && !canAddMore}
-              className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.15em] text-gray-700 transition duration-150 hover:border-gray-400 disabled:cursor-not-allowed disabled:text-gray-300"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-700 transition duration-150 hover:border-gray-400 disabled:cursor-not-allowed disabled:text-gray-300"
             >
               {isCompared ? "✓ Comparing" : "Compare"}
             </button>

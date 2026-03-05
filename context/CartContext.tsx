@@ -14,6 +14,7 @@ import {
   addToCart as apiAddToCart,
   removeCartItem as apiRemoveItem,
   updateCartItem as apiUpdateItem,
+  CartConflictError,
   type CartResponse,
   type CartItem,
   type CartTotals,
@@ -78,6 +79,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setCart(updatedCart);
     } catch (err) {
       console.error("Failed to remove item:", err);
+      // 409 means the item key is stale — use the real cart from the error
+      if (err instanceof CartConflictError && err.cart) {
+        console.warn("[Cart] Stale item — syncing with real cart state");
+        setCart(err.cart);
+        return; // Don't re-throw — UI is now synced
+      }
       throw err;
     } finally {
       setLoading(false);
@@ -91,6 +98,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setCart(updatedCart);
     } catch (err) {
       console.error("Failed to update item:", err);
+      // 409 means the item key is stale — use the real cart from the error
+      if (err instanceof CartConflictError && err.cart) {
+        console.warn("[Cart] Stale item — syncing with real cart state");
+        setCart(err.cart);
+        return; // Don't re-throw — UI is now synced
+      }
       throw err;
     } finally {
       setLoading(false);

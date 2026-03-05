@@ -1,15 +1,24 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
+import { Suspense } from "react";
 
 type RegisterResponse =
   | { success: true; data: { userId: number; name: string; email: string } }
   | { success: false; error: string };
 
-export default function RegisterPage() {
+const getSafeRedirect = (redirect: string | null): string => {
+  if (!redirect) return "/account";
+  if (!redirect.startsWith("/") || redirect.startsWith("//")) return "/account";
+  return redirect;
+};
+
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = getSafeRedirect(searchParams.get("redirect"));
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -43,7 +52,7 @@ export default function RegisterPage() {
         return;
       }
 
-      router.replace("/account");
+      router.replace(redirectTo);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Registration failed.";
       setError(message);
@@ -149,11 +158,19 @@ export default function RegisterPage() {
 
         <p className="mt-6 text-center text-sm text-gray-600">
           Already have an account?{" "}
-          <Link href="/login" className="font-medium text-black transition hover:text-gray-800">
+          <Link href={`/login${redirectTo !== "/account" ? `?redirect=${encodeURIComponent(redirectTo)}` : ""}`} className="font-medium text-black transition hover:text-gray-800">
             Login
           </Link>
         </p>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><p>Loading...</p></div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }

@@ -33,7 +33,7 @@ export default function CampaignHero({ slides }: CampaignHeroProps) {
 
     return (
         <section className="mx-auto w-full max-w-6xl px-4 pt-4 pb-2 sm:px-6 sm:pt-6">
-            <div className="group relative overflow-hidden rounded-2xl shadow-sm bg-gray-100 h-[300px] sm:h-[340px] md:h-[400px] lg:h-[440px]">
+            <div className="group relative w-full overflow-hidden rounded-2xl bg-neutral-100 shadow-sm aspect-[4/3] md:aspect-[16/7]">
                 {/* ── Slides ── */}
                 {active.map((slide, index) => {
                     const overlay = Math.min(slide.overlayOpacity ?? 0.05, 0.10);
@@ -48,18 +48,18 @@ export default function CampaignHero({ slides }: CampaignHeroProps) {
                                 }`}
                         >
                             {/* Background image */}
-                            <Image
-                                src={slide.backgroundImage}
-                                alt={slide.title}
-                                fill
-                                priority={index === 0}
-                                className="object-cover campaign-hero-img"
-                                style={{
-                                    "--hero-pos-mobile": slide.mobileObjectPosition || slide.objectPosition || "center center",
-                                    "--hero-pos-desktop": slide.objectPosition || "center center",
-                                } as React.CSSProperties}
-                                sizes="(max-width: 1152px) 100vw, 1152px"
-                            />
+                            <div className="absolute inset-0 flex items-center justify-center p-2 md:p-0">
+                                <div className="relative h-full w-full">
+                                    <Image
+                                        src={slide.backgroundImage}
+                                        alt={slide.title}
+                                        fill
+                                        priority={index === 0}
+                                        sizes="100vw"
+                                        className="object-contain md:object-cover object-center transition-transform duration-500 ease-out"
+                                    />
+                                </div>
+                            </div>
 
                             {/* Subtle overlay */}
                             <div

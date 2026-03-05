@@ -25,6 +25,8 @@ export async function proxyToWooStore(
   const clientCartToken = request.headers.get(CART_TOKEN_HEADER);
   const storedCartToken = request.cookies.get(WC_CART_TOKEN_COOKIE)?.value;
   const cartToken = clientCartToken || storedCartToken;
+
+
   if (cartToken) {
     outgoing.set(CART_TOKEN_HEADER, cartToken);
   }
@@ -53,13 +55,25 @@ export async function proxyToWooStore(
 
   let wooResponse: Response;
   try {
-    wooResponse = await fetch(url, { method, headers: outgoing, body });
+    // Add cache-busting for GET requests to avoid stale cart data
+    const fetchUrl = method === "GET"
+      ? `${url}${url.includes("?") ? "&" : "?"}t=${Date.now()}`
+      : url;
+
+    if (method === "GET") {
+      outgoing.set("Cache-Control", "no-cache, no-store, must-revalidate");
+      outgoing.set("Pragma", "no-cache");
+    }
+
+    wooResponse = await fetch(fetchUrl, { method, headers: outgoing, body, cache: "no-store" });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Network error";
     return NextResponse.json({ error: `Failed to reach WooCommerce: ${msg}` }, { status: 502 });
   }
 
   const text = await wooResponse.text();
+
+
   let data: unknown;
   try {
     data = text ? JSON.parse(text) : null;

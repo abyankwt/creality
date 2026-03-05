@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, ShoppingBag, User } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-import type { ApiResponse, UserSession } from "@/lib/types";
+import type { UserSession } from "@/lib/types";
 import type { CategoryNode } from "@/lib/categories";
 import StoreSwitcher from "./StoreSwitcher";
 import MegaMenu from "./MegaMenu";
@@ -15,6 +15,13 @@ import MobileMenu from "./MobileMenu";
 type NavbarProps = {
   categories?: CategoryNode[];
 };
+
+type AuthMeResponse =
+  | { authenticated: false }
+  | {
+    authenticated: true;
+    user: { id: number; email: string; name: string };
+  };
 
 export default function Navbar({ categories = [] }: NavbarProps) {
   const { cart } = useCart();
@@ -30,9 +37,13 @@ export default function Navbar({ categories = [] }: NavbarProps) {
     const load = async () => {
       try {
         const response = await fetch("/api/auth/me", { cache: "no-store" });
-        const data = (await response.json()) as ApiResponse<UserSession>;
-        if (active && response.ok && data.success) {
-          setUser(data.data);
+        const data = (await response.json()) as AuthMeResponse;
+        if (active && response.ok && data.authenticated) {
+          setUser({
+            userId: data.user.id,
+            email: data.user.email,
+            name: data.user.name,
+          });
         }
       } catch {
         if (active) setUser(null);
@@ -119,7 +130,7 @@ export default function Navbar({ categories = [] }: NavbarProps) {
 
         <div className="hidden items-center gap-4 lg:flex">
           <Link
-            href="/api/store/checkout"
+            href="/cart"
             className="relative text-[#0b0b0b] transition hover:text-black"
             aria-label="Cart"
           >
@@ -199,7 +210,7 @@ export default function Navbar({ categories = [] }: NavbarProps) {
 
         <div className="flex items-center gap-3 lg:hidden">
           <Link
-            href="/api/store/checkout"
+            href="/cart"
             className="relative rounded-md border border-gray-200 p-2"
           >
             <ShoppingBag className="h-5 w-5 text-gray-700" />

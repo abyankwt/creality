@@ -44,10 +44,10 @@ export default function ProfileSection({ session }: Props) {
 
             {/* Sign out */}
             <div className="rounded-xl border border-gray-200 bg-white p-4">
-                <p className="text-sm font-semibold text-gray-900">Sign Out</p>
-                <p className="mt-1 text-xs text-gray-500">Your cart will stay available on this device.</p>
+                <p className="text-sm font-semibold text-gray-900">Logout</p>
+                <p className="mt-1 text-xs text-gray-500">Sign out of your account</p>
                 <div className="mt-3">
-                    <LogoutButton />
+                    <LogoutButton fullWidth />
                 </div>
             </div>
         </div>

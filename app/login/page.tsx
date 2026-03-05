@@ -1,15 +1,24 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
+import { Suspense } from "react";
 
 type LoginResponse =
   | { success: true; data: { userId: number; name: string; email: string } }
   | { success: false; error: string };
 
-export default function LoginPage() {
+const getSafeRedirect = (redirect: string | null): string => {
+  if (!redirect) return "/account";
+  if (!redirect.startsWith("/") || redirect.startsWith("//")) return "/account";
+  return redirect;
+};
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = getSafeRedirect(searchParams.get("redirect"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +44,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.replace("/account");
+      router.replace(redirectTo);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Login failed.";
       setError(message);
@@ -104,11 +113,19 @@ export default function LoginPage() {
 
         <p className="mt-6 text-center text-sm text-gray-600">
           Don&apos;t have an account?{" "}
-          <Link href="/register" className="font-medium text-black transition hover:text-gray-800">
+          <Link href={`/register${redirectTo !== "/account" ? `?redirect=${encodeURIComponent(redirectTo)}` : ""}`} className="font-medium text-black transition hover:text-gray-800">
             Register
           </Link>
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center"><p>Loading...</p></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

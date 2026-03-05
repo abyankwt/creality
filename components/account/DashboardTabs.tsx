@@ -5,6 +5,7 @@ import OrdersSection from "./OrdersSection";
 import SubscriptionsSection from "./SubscriptionsSection";
 import LoyaltySection from "./LoyaltySection";
 import ProfileSection from "./ProfileSection";
+import LogoutButton from "./LogoutButton";
 import type { UserSession } from "@/lib/types";
 
 type Tab = "orders" | "subscriptions" | "loyalty" | "profile";
@@ -87,6 +88,14 @@ export default function DashboardTabs({ session }: Props) {
                         </div>
                     );
                 })}
+
+                <div className="rounded-xl border border-gray-200 bg-white p-4">
+                    <p className="text-sm font-semibold text-gray-900">Logout</p>
+                    <p className="mt-1 text-xs text-gray-500">Sign out of your account</p>
+                    <div className="mt-3">
+                        <LogoutButton fullWidth />
+                    </div>
+                </div>
             </div>
 
             {/* Desktop content */}

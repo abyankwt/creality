@@ -10,12 +10,28 @@ type WpUserMe = {
   email?: string;
 };
 
+type WooOrderLineItemResponse = {
+  id: number;
+  name: string;
+  product_id: number;
+  quantity: number;
+  subtotal: string;
+  total: string;
+  price: number;
+  image?: { id: number; src: string };
+};
+
 type WooOrderResponse = {
   id: number;
   status: string;
   date_created: string;
   total: string;
   currency: string;
+  customer_id: number;
+  line_items: WooOrderLineItemResponse[];
+  billing: WooAddressResponse;
+  shipping: WooAddressResponse;
+  payment_method_title: string;
 };
 
 type WooCustomerResponse = {
@@ -133,8 +149,19 @@ export const updateWooCustomer = async (customerId: number, payload: Record<stri
 };
 
 export const getWooOrders = async (customerId: number) => {
-  const path = `orders?customer=${encodeURIComponent(String(customerId))}`;
+  const path = `orders?customer=${encodeURIComponent(String(customerId))}&per_page=50&orderby=date&order=desc`;
   return wooRequest<WooOrderResponse[]>(path);
+};
+
+export const getWooOrder = async (orderId: number) => {
+  return wooRequest<WooOrderResponse>(`orders/${orderId}`);
+};
+
+export const updateWooOrder = async (orderId: number, payload: Record<string, unknown>) => {
+  return wooRequest<WooOrderResponse>(`orders/${orderId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
 };
 
 type WooMetaData = { key: string; value: string };

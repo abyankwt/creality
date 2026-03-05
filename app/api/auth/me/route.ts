@@ -1,35 +1,131 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { apiError, apiSuccess, ERROR_MESSAGES, resolveErrorMessage } from "@/lib/errors";
+import jwt, { type JwtPayload } from "jsonwebtoken";
 import { SESSION_COOKIE_NAME, verifySession } from "@/lib/auth-session";
-import { getWpUserById } from "@/lib/woo-client";
-import type { UserSession } from "@/lib/types";
 
-export async function GET(request: NextRequest) {
+type AuthenticatedUser = {
+  id: number;
+  email: string;
+  name: string;
+};
+
+type AuthResponse =
+  | { authenticated: false }
+  | { authenticated: true; user: AuthenticatedUser };
+
+type JwtSessionPayload = JwtPayload & {
+  id?: number | string;
+  userId?: number | string;
+  email?: string;
+  name?: string;
+};
+
+const unauthenticated = (): NextResponse<AuthResponse> =>
+  NextResponse.json({ authenticated: false }, { status: 200 });
+
+const parseUserId = (value: unknown): number | null => {
+  if (typeof value === "number" && Number.isInteger(value) && value > 0) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    const num = Number(value);
+    if (Number.isInteger(num) && num > 0) {
+      return num;
+    }
+  }
+  return null;
+};
+
+const parseJwtUser = (token: string, secret: string): AuthenticatedUser | null => {
   try {
+    const decoded = jwt.verify(token, secret) as JwtSessionPayload | string;
+    if (!decoded || typeof decoded === "string") {
+      console.error("[auth/me] JWT payload is invalid.");
+      return null;
+    }
+
+    const id = parseUserId(decoded.id ?? decoded.userId ?? decoded.sub);
+    const email = typeof decoded.email === "string" ? decoded.email.trim() : "";
+    const name = typeof decoded.name === "string" ? decoded.name.trim() : "";
+
+    if (!id || !email || !name) {
+      console.error("[auth/me] JWT missing required user fields.");
+      return null;
+    }
+
+    return { id, email, name };
+  } catch (error) {
+    console.error("[auth/me] JWT verification failed:", error);
+    return null;
+  }
+};
+
+export async function GET(request: NextRequest): Promise<NextResponse<AuthResponse>> {
+  try {
+    const sessionSecret = process.env.SESSION_SECRET?.trim();
+    const wordpressUrl =
+      process.env.WORDPRESS_URL?.trim() || process.env.WC_BASE_URL?.trim();
+
+    if (!sessionSecret || !wordpressUrl) {
+      console.error("[auth/me] Missing required env vars.", {
+        hasSessionSecret: Boolean(sessionSecret),
+        hasWordpressUrl: Boolean(wordpressUrl),
+      });
+      return unauthenticated();
+    }
+
     const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
     if (!token) {
-      return NextResponse.json(apiError(ERROR_MESSAGES.unauthorized), { status: 401 });
+      console.error("[auth/me] Missing session cookie.");
+      return unauthenticated();
     }
 
-    const session = await verifySession(token);
-    if (!session) {
-      return NextResponse.json(apiError(ERROR_MESSAGES.unauthorized), { status: 401 });
+    const tokenSegments = token.split(".").length;
+
+    // JWT flow
+    if (tokenSegments === 3) {
+      const jwtUser = parseJwtUser(token, sessionSecret);
+      if (!jwtUser) {
+        return unauthenticated();
+      }
+      return NextResponse.json(
+        {
+          authenticated: true,
+          user: jwtUser,
+        },
+        { status: 200 }
+      );
     }
 
-    const refreshed = await getWpUserById(session.userId);
-    if (!refreshed.ok || !refreshed.data?.id) {
-      return NextResponse.json(apiSuccess(session));
+    // Legacy HMAC-signed session flow
+    if (tokenSegments === 2) {
+      try {
+        const session = await verifySession(token);
+        if (!session) {
+          console.error("[auth/me] Legacy session verification failed.");
+          return unauthenticated();
+        }
+
+        return NextResponse.json(
+          {
+            authenticated: true,
+            user: {
+              id: session.userId,
+              email: session.email,
+              name: session.name,
+            },
+          },
+          { status: 200 }
+        );
+      } catch (error) {
+        console.error("[auth/me] Legacy session verification threw:", error);
+        return unauthenticated();
+      }
     }
 
-    const data: UserSession = {
-      userId: refreshed.data.id,
-      name: refreshed.data.name,
-      email: refreshed.data.email ?? session.email,
-    };
-
-    return NextResponse.json(apiSuccess(data));
+    console.error("[auth/me] Unsupported session token format.");
+    return unauthenticated();
   } catch (error) {
-    const message = resolveErrorMessage(error, ERROR_MESSAGES.serverError);
-    return NextResponse.json(apiError(message), { status: 500 });
+    console.error("[auth/me] Unexpected error:", error);
+    return unauthenticated();
   }
 }

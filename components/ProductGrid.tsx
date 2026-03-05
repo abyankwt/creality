@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import ProductCard from "./ProductCard";
 
 type ProductImage = {
@@ -34,6 +34,26 @@ export default function ProductGrid({
     const [page, setPage] = useState(initialPage);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(initialPage < totalPages);
+    const [showToast, setShowToast] = useState(false);
+    const toastTimerRef = useRef<number | null>(null);
+
+    const handleAddedToCart = useCallback(() => {
+        setShowToast(true);
+        if (toastTimerRef.current) {
+            window.clearTimeout(toastTimerRef.current);
+        }
+        toastTimerRef.current = window.setTimeout(() => {
+            setShowToast(false);
+        }, 1400);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            if (toastTimerRef.current) {
+                window.clearTimeout(toastTimerRef.current);
+            }
+        };
+    }, []);
 
     const loadMore = useCallback(async () => {
         if (loading || !hasMore) return;
@@ -58,30 +78,34 @@ export default function ProductGrid({
 
     return (
         <>
-            <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
-                {products.map((product) => (
-                    <ProductCard
-                        key={product.id}
-                        product={{
-                            id: product.id,
-                            images: product.images,
-                            purchasable: product.purchasable,
-                            stock_status: product.stock_status,
-                        }}
-                        imageUrl={product.images?.[0]?.src ?? ""}
-                        title={product.name}
-                        price={parseFloat(product.price)}
-                        slug={product.slug}
-                    />
-                ))}
+            <div className="px-3 sm:px-0">
+                <div className="grid grid-cols-2 gap-3 [@media(min-width:420px)]:grid-cols-3 lg:grid-cols-4">
+                    {products.map((product, index) => (
+                        <ProductCard
+                            key={product.id}
+                            product={{
+                                id: product.id,
+                                images: product.images,
+                                purchasable: product.purchasable,
+                                stock_status: product.stock_status,
+                            }}
+                            imageUrl={product.images?.[0]?.src ?? ""}
+                            title={product.name}
+                            price={parseFloat(product.price)}
+                            slug={product.slug}
+                            onAddToCart={handleAddedToCart}
+                            priority={index < 6}
+                        />
+                    ))}
+                </div>
             </div>
 
             {hasMore && (
-                <div className="mt-10 flex justify-center">
+                <div className="mt-8 flex justify-center">
                     <button
                         onClick={loadMore}
                         disabled={loading}
-                        className="rounded-2xl border border-black px-10 py-4 text-sm font-semibold transition-all duration-300 hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-2xl border border-black px-8 py-3 text-sm font-semibold transition-all duration-300 hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         {loading ? (
                             <span className="flex items-center gap-2">
@@ -112,6 +136,17 @@ export default function ProductGrid({
                     </button>
                 </div>
             )}
+
+            <div
+                role="status"
+                aria-live="polite"
+                className={`pointer-events-none fixed inset-x-0 bottom-5 z-50 flex justify-center px-4 transition duration-200 ${showToast ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+                    }`}
+            >
+                <div className="rounded-full bg-black px-4 py-2 text-xs font-semibold text-white shadow-lg">
+                    Added to cart
+                </div>
+            </div>
         </>
     );
 }

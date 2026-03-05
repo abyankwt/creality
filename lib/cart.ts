@@ -117,6 +117,19 @@ export type CartResponse = {
   errors?: Array<{ code: string; message: string }>;
 };
 
+// ── Custom error class for cart conflicts ──
+
+export class CartConflictError extends Error {
+  /** The real cart state returned by WooCommerce inside the 409 response */
+  cart: CartResponse | null;
+
+  constructor(message: string, cart: CartResponse | null) {
+    super(message);
+    this.name = "CartConflictError";
+    this.cart = cart;
+  }
+}
+
 // ── Core fetch wrapper — routes through Next.js proxy ──
 
 async function fetchStoreApi<T>(
@@ -150,13 +163,25 @@ async function fetchStoreApi<T>(
   if (!response.ok) {
     const text = await response.text();
     let message = `Store API error ${response.status}`;
+    let embeddedCart: CartResponse | null = null;
+
     try {
       const err = JSON.parse(text);
       if (err?.message) message += `: ${err.message}`;
       else if (err?.error) message += `: ${err.error}`;
+
+      // 409 responses include the real cart state in data.cart
+      if (response.status === 409 && err?.data?.cart) {
+        embeddedCart = err.data.cart as CartResponse;
+      }
     } catch {
       if (text) message += `: ${text}`;
     }
+
+    if (response.status === 409 && embeddedCart) {
+      throw new CartConflictError(message, embeddedCart);
+    }
+
     throw new Error(message);
   }
 
@@ -196,4 +221,51 @@ export async function removeCartItem(
     method: "POST",
     body: JSON.stringify({ key }),
   });
+}
+
+// ── Checkout types ──
+
+export type BillingAddress = {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  country: string;
+  state: string;
+  city: string;
+  address_1: string;
+  address_2?: string;
+  postcode?: string;
+};
+
+export type CheckoutPayload = {
+  billing_address: BillingAddress;
+  shipping_address?: Omit<BillingAddress, "email" | "phone">;
+  payment_method: string;
+};
+
+export type CheckoutResult = {
+  success: boolean;
+  order_id: number;
+  redirect_url: string;
+  error?: string;
+};
+
+export async function submitCheckout(
+  payload: CheckoutPayload
+): Promise<CheckoutResult> {
+  const response = await fetch("/api/store/checkout", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data?.error || `Checkout failed (${response.status})`);
+  }
+
+  return data as CheckoutResult;
 }

@@ -8,12 +8,27 @@ export type UserSession = {
   name: string;
 };
 
+export type WooOrderLineItem = {
+  id: number;
+  name: string;
+  product_id: number;
+  quantity: number;
+  subtotal: string;
+  total: string;
+  price: number;
+  image?: { id: number; src: string };
+};
+
 export type WooOrder = {
   id: number;
   status: string;
   date: string;
   total: string;
   currency: string;
+  line_items?: WooOrderLineItem[];
+  billing?: WooAddress;
+  shipping?: WooAddress;
+  payment_method_title?: string;
 };
 
 export type WooAddress = {

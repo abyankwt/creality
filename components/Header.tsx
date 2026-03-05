@@ -23,14 +23,16 @@ type SearchResult = {
 };
 
 type AuthUser = {
-  id?: string | number;
-  name?: string;
-  email?: string;
-  [key: string]: unknown;
+  id: number;
+  name: string;
+  email: string;
 };
 
 type AuthResponse = {
-  user: AuthUser | null;
+  authenticated: false;
+} | {
+  authenticated: true;
+  user: AuthUser;
 };
 
 const navLinks = [
@@ -63,7 +65,7 @@ export default function Header() {
         const response = await fetch("/api/auth/me");
         const data = (await response.json()) as AuthResponse;
         if (isMounted) {
-          setUser(data?.user ?? null);
+          setUser(data.authenticated ? data.user : null);
         }
       } catch {
         if (isMounted) {
@@ -190,8 +192,8 @@ export default function Header() {
               key={link.href}
               href={link.href}
               className={`transition hover:text-[#0b0b0b] ${pathname === link.href || pathname?.startsWith(`${link.href}/`)
-                  ? "text-[#0b0b0b]"
-                  : ""
+                ? "text-[#0b0b0b]"
+                : ""
                 }`}
             >
               {link.label}
@@ -259,7 +261,7 @@ export default function Header() {
 
         <div className="flex items-center gap-5 text-sm text-gray-500">
           <Link
-            href={process.env.NEXT_PUBLIC_WC_CHECKOUT_URL || "https://creality.com.kw/site/checkout/"}
+            href="/cart"
             className="relative flex items-center text-[#0b0b0b] transition hover:text-black"
             aria-label="Cart"
           >
