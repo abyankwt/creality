@@ -47,7 +47,7 @@ export default async function HomePage({ searchParams }: PageProps) {
   const wpHeroImages = await fetchHeroImages();
 
   const featuredProducts = products.filter(
-    (p) => (p as { featured?: boolean }).featured
+    (p) => p.featured
   );
 
   // Hydrate campaign slides with images from WordPress backend

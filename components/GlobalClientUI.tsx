@@ -12,11 +12,16 @@ const PromoPopup = dynamic(() => import("@/components/PromoPopup"), {
     ssr: false,
 });
 
+const SupportChatbot = dynamic(() => import("@/components/SupportChatbot"), {
+    ssr: false,
+});
+
 export default function GlobalClientUI() {
     return (
         <>
             <CompareBar />
             <PromoPopup />
+            <SupportChatbot />
         </>
     );
 }

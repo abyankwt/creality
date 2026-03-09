@@ -6,8 +6,9 @@
  * so the cart survives page navigations.
  * ───────────────────────────────────────────────────────────── */
 
+import type { ProductAvailability } from "@/lib/availability";
+
 const NONCE_HEADER = "Nonce";
-const CART_TOKEN_HEADER = "Cart-Token";
 
 // ── In-memory nonce (refreshed from proxy response headers) ──
 let nonce = "";
@@ -73,6 +74,7 @@ export type CartItem = {
     currency_prefix?: string;
     currency_suffix?: string;
   };
+  availability?: ProductAvailability;
 };
 
 export type CartTotals = {
@@ -242,6 +244,7 @@ export type CheckoutPayload = {
   billing_address: BillingAddress;
   shipping_address?: Omit<BillingAddress, "email" | "phone">;
   payment_method: string;
+  order_warning_acknowledged?: boolean;
 };
 
 export type CheckoutResult = {

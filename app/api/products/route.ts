@@ -1,63 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchProducts } from "@/lib/woocommerce";
 
 export async function GET(request: NextRequest) {
+  try {
     const { searchParams } = request.nextUrl;
     const page = parseInt(searchParams.get("page") ?? "1", 10);
     const perPage = parseInt(searchParams.get("per_page") ?? "12", 10);
+    const search = searchParams.get("search") ?? undefined;
+    const stock_status = searchParams.get("stock_status") ?? undefined;
+    const orderby = searchParams.get("orderby") ?? undefined;
+    const order = (searchParams.get("order") as "asc" | "desc" | null) ?? undefined;
+    const category = searchParams.get("category");
+    const exclude = searchParams.get("exclude");
 
-    const baseUrl = process.env.WC_BASE_URL;
-    const consumerKey = process.env.WC_CONSUMER_KEY;
-    const consumerSecret = process.env.WC_CONSUMER_SECRET;
-
-    if (!baseUrl || !consumerKey || !consumerSecret) {
-        return NextResponse.json(
-            { error: "Missing WooCommerce configuration" },
-            { status: 500 }
-        );
-    }
-
-    const normalizedBase = baseUrl.replace(/\/$/, "");
-    const url = new URL(`${normalizedBase}/wp-json/wc/v3/products`);
-    url.searchParams.set("page", String(page));
-    url.searchParams.set("per_page", String(perPage));
-
-    const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString(
-        "base64"
-    );
-
-    const response = await fetch(url.toString(), {
-        headers: {
-            Authorization: `Basic ${auth}`,
-            Accept: "application/json",
-        },
-        cache: "no-store",
+    const result = await fetchProducts({
+      page,
+      perPage,
+      search,
+      stock_status,
+      orderby,
+      order: order ?? undefined,
+      category: category ? Number(category) : undefined,
     });
 
-    if (!response.ok) {
-        const body = await response.text();
-        return NextResponse.json(
-            { error: `WooCommerce request failed (${response.status})`, detail: body },
-            { status: response.status }
-        );
-    }
-
-    const totalPages = parseInt(
-        response.headers.get("x-wp-totalpages") ?? "1",
-        10
-    );
-    const totalProducts = parseInt(
-        response.headers.get("x-wp-total") ?? "0",
-        10
-    );
-    const products = await response.json();
+    const excludedId = exclude ? Number(exclude) : undefined;
+    const products = Number.isFinite(excludedId)
+      ? result.data.filter((product) => product.id !== excludedId)
+      : result.data;
 
     return NextResponse.json({
-        products,
-        pagination: {
-            page,
-            perPage,
-            totalPages,
-            totalProducts,
-        },
+      products,
+      pagination: {
+        page,
+        perPage,
+        totalPages: result.totalPages,
+        totalProducts: result.totalProducts,
+      },
     });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

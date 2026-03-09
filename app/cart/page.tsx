@@ -1,14 +1,24 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import AvailabilityBadge from "@/components/AvailabilityBadge";
+import OrderWarningModal from "@/components/OrderWarningModal";
+import SmartImage from "@/components/SmartImage";
 import { useCart } from "@/context/CartContext";
+import {
+    requiresOrderWarning,
+    type ProductAvailability,
+} from "@/lib/availability";
 
 export default function CartPage() {
+    const router = useRouter();
     const { cart, loading, removeItem, updateItem, itemCount } = useCart();
+    const [warningOpen, setWarningOpen] = useState(false);
+    const [warningAccepted, setWarningAccepted] = useState(false);
 
-    /* ── helpers ── */
     const decodeHtml = (html: string) => {
         if (typeof document === "undefined") return html;
         const txt = document.createElement("textarea");
@@ -28,7 +38,6 @@ export default function CartPage() {
 
     const minorUnit = cart?.totals?.currency_minor_unit ?? 3;
 
-    // If still loading and no cart data yet, show skeleton
     if (!cart && loading) {
         return (
             <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
@@ -36,9 +45,9 @@ export default function CartPage() {
                     Your Cart
                 </h1>
                 <div className="space-y-4">
-                    {[1, 2, 3].map((i) => (
+                    {[1, 2, 3].map((index) => (
                         <div
-                            key={i}
+                            key={index}
                             className="h-24 animate-pulse rounded-xl bg-gray-100"
                         />
                     ))}
@@ -49,10 +58,20 @@ export default function CartPage() {
 
     const items = cart?.items ?? [];
 
-    // Early return if cart is null (satisfies TypeScript; won't happen after loading)
     if (!cart) return null;
 
-    /* ── empty state ── */
+    const protectedItems = items.filter((item) =>
+        item.availability ? requiresOrderWarning(item.availability) : false
+    );
+
+    const primaryWarningAvailability: ProductAvailability =
+        protectedItems[0]?.availability ?? {
+            type: "special",
+            label: "Special Order",
+            badge: "Special Order",
+            leadTime: "10-12 days",
+        };
+
     if (items.length === 0) {
         return (
             <div className="mx-auto flex max-w-4xl flex-col items-center justify-center px-4 py-24 text-center sm:px-6 lg:px-8">
@@ -75,7 +94,6 @@ export default function CartPage() {
         );
     }
 
-    /* ── cart with items ── */
     return (
         <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
             <h1 className="mb-8 text-2xl font-bold tracking-tight text-gray-900">
@@ -85,48 +103,55 @@ export default function CartPage() {
                 </span>
             </h1>
 
-            {/* ── Item list ── */}
             <div className="divide-y divide-gray-200 border-y border-gray-200">
                 {items.map((item) => {
                     const imageSrc =
                         item.images?.[0]?.thumbnail ||
                         item.images?.[0]?.src ||
-                        "/placeholder.png";
+                        "/images/product-placeholder.svg";
                     const lineTotal = formatPrice(
                         item.totals?.line_total ?? "0",
                         minorUnit
                     );
                     const unitPrice = item.prices
-                        ? formatPrice(item.prices.price, item.prices.currency_minor_unit ?? minorUnit)
+                        ? formatPrice(
+                              item.prices.price,
+                              item.prices.currency_minor_unit ?? minorUnit
+                          )
                         : null;
                     const min = item.quantity_limits?.minimum ?? 1;
                     const max = item.quantity_limits?.maximum ?? 999;
 
                     return (
-                        <div
-                            key={item.key}
-                            className="flex gap-4 py-6 sm:gap-6"
-                        >
-                            {/* Image */}
-                            <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100 sm:h-28 sm:w-28">
-                                <Image
+                        <div key={item.key} className="flex gap-4 py-6 sm:gap-6">
+                            <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100 sm:h-28 sm:w-28">
+                                <SmartImage
                                     src={imageSrc}
                                     alt={item.name}
-                                    fill
+                                    mode="product"
                                     sizes="112px"
-                                    className="object-contain p-2"
+                                    className="rounded-none"
                                 />
                             </div>
 
-                            {/* Details */}
                             <div className="flex flex-1 flex-col justify-between">
                                 <div className="flex justify-between gap-4">
                                     <div className="min-w-0">
                                         <h3 className="text-sm font-semibold text-gray-900 sm:text-base">
                                             {decodeHtml(item.name)}
                                         </h3>
+                                        {item.availability && (
+                                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                                                <AvailabilityBadge availability={item.availability} />
+                                                {item.availability.type !== "available" && (
+                                                    <span className="text-xs text-gray-500">
+                                                        Lead time: {item.availability.leadTime}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                         {unitPrice && (
-                                            <p className="mt-0.5 text-xs text-gray-500">
+                                            <p className="mt-1 text-xs text-gray-500">
                                                 {currency} {unitPrice} each
                                             </p>
                                         )}
@@ -136,7 +161,6 @@ export default function CartPage() {
                                     </p>
                                 </div>
 
-                                {/* Quantity + remove */}
                                 <div className="mt-3 flex items-center gap-4">
                                     <div className="flex items-center overflow-hidden rounded-lg border border-gray-200">
                                         <button
@@ -183,22 +207,19 @@ export default function CartPage() {
                 })}
             </div>
 
-            {/* ── Summary ── */}
             <div className="mt-8 rounded-xl border border-gray-200 bg-gray-50 p-6">
                 <div className="space-y-3">
                     <div className="flex justify-between text-sm text-gray-600">
                         <span>Subtotal</span>
                         <span className="font-medium text-gray-900">
-                            {currency}{" "}
-                            {formatPrice(cart.totals?.total_items ?? "0", minorUnit)}
+                            {currency} {formatPrice(cart.totals?.total_items ?? "0", minorUnit)}
                         </span>
                     </div>
                     {Number(cart.totals?.total_shipping ?? 0) > 0 && (
                         <div className="flex justify-between text-sm text-gray-600">
                             <span>Shipping</span>
                             <span className="font-medium text-gray-900">
-                                {currency}{" "}
-                                {formatPrice(cart.totals.total_shipping, minorUnit)}
+                                {currency} {formatPrice(cart.totals.total_shipping, minorUnit)}
                             </span>
                         </div>
                     )}
@@ -206,8 +227,7 @@ export default function CartPage() {
                         <div className="flex justify-between text-sm text-green-600">
                             <span>Discount</span>
                             <span className="font-medium">
-                                -{currency}{" "}
-                                {formatPrice(cart.totals.total_discount, minorUnit)}
+                                -{currency} {formatPrice(cart.totals.total_discount, minorUnit)}
                             </span>
                         </div>
                     )}
@@ -215,19 +235,32 @@ export default function CartPage() {
                         <div className="flex justify-between text-base font-bold text-gray-900">
                             <span>Total</span>
                             <span>
-                                {currency}{" "}
-                                {formatPrice(cart.totals?.total_price ?? "0", minorUnit)}
+                                {currency} {formatPrice(cart.totals?.total_price ?? "0", minorUnit)}
                             </span>
                         </div>
                     </div>
                 </div>
 
-                <Link
-                    href="/checkout"
+                {protectedItems.length > 0 && (
+                    <div className="mt-5 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-700">
+                        Special order and pre-order items require policy confirmation before checkout.
+                    </div>
+                )}
+
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (protectedItems.length > 0) {
+                            setWarningAccepted(false);
+                            setWarningOpen(true);
+                            return;
+                        }
+                        router.push("/checkout");
+                    }}
                     className="mt-6 flex w-full items-center justify-center rounded-full bg-black px-8 py-4 text-sm font-semibold text-white transition hover:opacity-90"
                 >
-                    {loading ? "Processing…" : "Proceed to Checkout"}
-                </Link>
+                    {loading ? "Processing..." : "Proceed to Checkout"}
+                </button>
 
                 <Link
                     href="/store"
@@ -236,6 +269,18 @@ export default function CartPage() {
                     ← Continue Shopping
                 </Link>
             </div>
+
+            <OrderWarningModal
+                open={warningOpen}
+                availability={primaryWarningAvailability}
+                acknowledged={warningAccepted}
+                onAcknowledgedChange={setWarningAccepted}
+                onClose={() => setWarningOpen(false)}
+                onConfirm={() => {
+                    setWarningOpen(false);
+                    router.push("/checkout?warning=accepted");
+                }}
+            />
         </div>
     );
 }

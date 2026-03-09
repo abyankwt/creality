@@ -68,7 +68,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           No products found for &quot;{query}&quot;.
         </div>
       ) : (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="product-grid gap-3 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((product) => (
             <ProductCard
               key={product.id}
@@ -78,9 +78,12 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                 images: product.images,
                 purchasable: product.purchasable,
                 stock_status: product.stock_status,
+                price: product.price,
+                tags: product.tags,
+                categories: product.categories,
               }}
               title={product.name}
-              price={Number(product.price)}
+              price={product.price}
               slug={product.slug}
             />
           ))}

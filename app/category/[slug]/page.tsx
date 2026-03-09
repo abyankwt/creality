@@ -3,8 +3,6 @@ import CategorySort from "@/components/CategorySort";
 import ProductCard from "@/components/ProductCard";
 import { fetchProductsByCategory, type WCProduct } from "@/lib/api";
 
-const PAGE_SIZE = 12;
-
 const getCategoryName = (products: WCProduct[], slug: string) => {
   const match = products
     .flatMap((product) => product.categories)
@@ -79,7 +77,7 @@ export default async function CategoryPage({
           No products found in this category.
         </div>
       ) : (
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="product-grid mt-10">
           {sortedProducts.map((product) => (
             <ProductCard
               key={product.id}
@@ -89,9 +87,12 @@ export default async function CategoryPage({
                 images: product.images,
                 purchasable: product.purchasable,
                 stock_status: product.stock_status,
+                price: product.price,
+                tags: product.tags,
+                categories: product.categories,
               }}
               title={product.name}
-              price={Number(product.price)}
+              price={product.price}
               slug={product.slug}
             />
           ))}

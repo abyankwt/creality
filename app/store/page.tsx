@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import PromoModal from "./promo-modal";
 import Hero from "@/components/store/Hero";
-import CategoryGrid from "@/components/store/CategoryGrid";
+import CategoryIconGrid from "@/components/CategoryIconGrid";
 import FeaturedProducts from "@/components/store/FeaturedProducts";
 import FilterBar from "@/components/store/FilterBar";
 import { fetchProductsByCategory } from "@/lib/api";
@@ -59,7 +59,7 @@ export default async function StorePage({ searchParams }: PageProps) {
     <div className="bg-white">
       <PromoModal />
       <Hero />
-      <CategoryGrid />
+      <CategoryIconGrid />
 
       {/* FilterBar needs Suspense because it uses useSearchParams (client) */}
       <div className="relative mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -70,7 +70,6 @@ export default async function StorePage({ searchParams }: PageProps) {
 
       <FeaturedProducts
         products={featured}
-        totalCount={totalProducts}
         title={series ? slugToTitle(series) : "Featured printers"}
       />
     </div>

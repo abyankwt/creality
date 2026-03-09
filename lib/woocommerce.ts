@@ -1,0 +1,330 @@
+import "server-only";
+
+import type {
+  Product,
+  ProductAttribute,
+  ProductCategory,
+  ProductImage,
+  ProductMeta,
+  ProductPrices,
+} from "@/lib/woocommerce-types";
+
+type SortOrder = "asc" | "desc";
+
+type StoreRequestParams = Record<string, string | number | boolean | undefined>;
+
+type RawProductImage = {
+  id: number;
+  src: string;
+  thumbnail?: string | null;
+  alt?: string | null;
+  name?: string | null;
+};
+
+type RawProductCategory = {
+  id: number;
+  name: string;
+  slug: string;
+  parent?: number;
+  description?: string;
+  image?: RawProductImage | null;
+};
+
+type RawProductTag = {
+  id: number;
+  name: string;
+  slug: string;
+};
+
+type RawProductAttribute = {
+  id: number;
+  name: string;
+  variation?: boolean;
+  visible?: boolean;
+  options?: string[];
+  terms?: Array<{ id?: number; name?: string; slug?: string }>;
+};
+
+type RawProductPrices = ProductPrices;
+
+type RawStoreProduct = {
+  id: number;
+  name: string;
+  slug: string;
+  permalink?: string;
+  description?: string;
+  short_description?: string;
+  price_html?: string;
+  prices?: RawProductPrices;
+  images?: RawProductImage[];
+  attributes?: RawProductAttribute[];
+  categories?: RawProductCategory[];
+  tags?: RawProductTag[];
+  meta_data?: ProductMeta[];
+  stock_status?: string;
+  stock_quantity?: number | null;
+  purchasable?: boolean;
+  average_rating?: string | number;
+  review_count?: number;
+  featured?: boolean;
+  related_ids?: number[];
+};
+
+type RawStoreProductResponse = RawStoreProduct[] | { products?: RawStoreProduct[] };
+
+export type FetchProductsOptions = {
+  page?: number;
+  perPage?: number;
+  search?: string;
+  orderby?: string;
+  order?: SortOrder;
+  stock_status?: string;
+  category?: number;
+  tag?: string;
+  include?: string;
+};
+
+export type FetchProductsResult = {
+  data: Product[];
+  totalPages: number;
+  totalProducts: number;
+};
+
+export type FetchProductsByCategoryOptions = {
+  page?: number;
+  orderby?: string;
+  order?: SortOrder;
+  stock_status?: string;
+  seriesSlug?: string;
+};
+
+const getBaseUrl = () => {
+  const baseUrl = process.env.WC_BASE_URL;
+  if (!baseUrl) {
+    throw new Error("Missing WC_BASE_URL");
+  }
+  return baseUrl.replace(/\/$/, "");
+};
+
+const buildStoreUrl = (path: string, params?: StoreRequestParams) => {
+  const baseUrl = getBaseUrl();
+  const url = new URL(`${baseUrl}/wp-json/wc/store/${path.replace(/^\//, "")}`);
+
+  Object.entries(params ?? {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      url.searchParams.set(key, String(value));
+    }
+  });
+
+  return url;
+};
+
+const parseStorePrice = (price?: string, minorUnit = 2) => {
+  if (!price) return 0;
+
+  const numeric = Number(price);
+  if (!Number.isFinite(numeric)) return 0;
+
+  return price.includes(".") ? numeric : numeric / Math.pow(10, minorUnit);
+};
+
+const formatCurrency = (
+  amount: number,
+  currencyCode?: string,
+  minorUnit = 2
+) => {
+  if (!currencyCode) {
+    return amount.toFixed(minorUnit);
+  }
+
+  try {
+    return new Intl.NumberFormat("en-KW", {
+      style: "currency",
+      currency: currencyCode,
+      minimumFractionDigits: minorUnit,
+      maximumFractionDigits: minorUnit,
+    }).format(amount);
+  } catch {
+    return `${amount.toFixed(minorUnit)} ${currencyCode}`;
+  }
+};
+
+const normalizeImage = (image: RawProductImage): ProductImage => ({
+  id: image.id,
+  src: image.src,
+  thumbnail: image.thumbnail ?? null,
+  alt: image.alt ?? null,
+  name: image.name ?? null,
+});
+
+const normalizeCategory = (category: RawProductCategory): ProductCategory => ({
+  id: category.id,
+  name: category.name,
+  slug: category.slug,
+  parent: category.parent ?? 0,
+  description: category.description,
+  image: category.image ? normalizeImage(category.image) : null,
+});
+
+const normalizeAttribute = (attribute: RawProductAttribute): ProductAttribute => ({
+  id: attribute.id,
+  name: attribute.name,
+  variation: Boolean(attribute.variation),
+  visible: Boolean(attribute.visible ?? true),
+  options: attribute.options ?? [],
+  terms: attribute.terms,
+});
+
+const normalizeProduct = (product: RawStoreProduct): Product => {
+  const minorUnit = product.prices?.currency_minor_unit ?? 2;
+  const price = parseStorePrice(product.prices?.price, minorUnit);
+  const regularPrice = parseStorePrice(product.prices?.regular_price, minorUnit);
+  const salePrice = parseStorePrice(product.prices?.sale_price, minorUnit);
+
+  return {
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    permalink: product.permalink,
+    description: product.description,
+    short_description: product.short_description,
+    price_html: product.price_html,
+    prices: product.prices,
+    price,
+    regular_price: regularPrice,
+    sale_price: salePrice,
+    formatted_price: formatCurrency(
+      price,
+      product.prices?.currency_code,
+      minorUnit
+    ),
+    currency_code: product.prices?.currency_code,
+    currency_symbol: product.prices?.currency_symbol,
+    currency_minor_unit: minorUnit,
+    images: (product.images ?? []).map(normalizeImage),
+    attributes: (product.attributes ?? []).map(normalizeAttribute),
+    categories: (product.categories ?? []).map(normalizeCategory),
+    tags: product.tags ?? [],
+    meta_data: product.meta_data ?? [],
+    stock_status: product.stock_status ?? "outofstock",
+    stock_quantity: product.stock_quantity ?? null,
+    purchasable: Boolean(product.purchasable),
+    average_rating:
+      typeof product.average_rating === "string"
+        ? Number(product.average_rating)
+        : product.average_rating,
+    review_count: product.review_count,
+    featured: product.featured,
+    related_ids: product.related_ids,
+  };
+};
+
+async function storeRequest<T>(
+  path: string,
+  params?: StoreRequestParams
+): Promise<{ data: T; totalPages: number; totalProducts: number }> {
+  const url = buildStoreUrl(path, params);
+  const response = await fetch(url.toString(), {
+    headers: {
+      Accept: "application/json",
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(
+      `WooCommerce Store API request failed (${response.status}). ${
+        body || response.statusText
+      }`
+    );
+  }
+
+  const totalPages = parseInt(response.headers.get("x-wp-totalpages") ?? "1", 10);
+  const totalProducts = parseInt(response.headers.get("x-wp-total") ?? "0", 10);
+
+  return { data: (await response.json()) as T, totalPages, totalProducts };
+}
+
+function unwrapProducts(data: RawStoreProductResponse): RawStoreProduct[] {
+  return Array.isArray(data) ? data : data.products ?? [];
+}
+
+export async function fetchProducts(
+  options: FetchProductsOptions = {}
+): Promise<FetchProductsResult> {
+  const { data, totalPages, totalProducts } = await storeRequest<RawStoreProductResponse>(
+    "products",
+    {
+      page: options.page ?? 1,
+      per_page: options.perPage ?? 12,
+      search: options.search,
+      orderby: options.orderby,
+      order: options.order,
+      stock_status: options.stock_status,
+      category: options.category,
+      tag: options.tag,
+      include: options.include,
+    }
+  );
+
+  return {
+    data: unwrapProducts(data).map(normalizeProduct),
+    totalPages,
+    totalProducts,
+  };
+}
+
+export async function fetchProductBySlug(slug: string): Promise<Product | null> {
+  const { data } = await storeRequest<RawStoreProductResponse>("products", {
+    slug,
+    per_page: 1,
+  });
+
+  const products = unwrapProducts(data).map(normalizeProduct);
+  return products[0] ?? null;
+}
+
+export async function fetchProductsByIds(ids: number[]): Promise<FetchProductsResult> {
+  return fetchProducts({
+    perPage: Math.max(ids.length, 1),
+    include: ids.join(","),
+  });
+}
+
+export async function fetchProductCategories(): Promise<ProductCategory[]> {
+  const { data } = await storeRequest<RawProductCategory[]>("products/categories", {
+    per_page: 100,
+  });
+
+  return data.map(normalizeCategory);
+}
+
+export async function fetchProductsByCategory(
+  category: string,
+  page = 1,
+  options: FetchProductsByCategoryOptions = {}
+): Promise<FetchProductsResult> {
+  const categories = await fetchProductCategories();
+  const matchedCategory = categories.find((item) => item.slug === category);
+
+  if (!matchedCategory) {
+    return { data: [], totalPages: 0, totalProducts: 0 };
+  }
+
+  let categoryId = matchedCategory.id;
+  if (options.seriesSlug) {
+    const childCategory = categories.find((item) => item.slug === options.seriesSlug);
+    if (childCategory) {
+      categoryId = childCategory.id;
+    }
+  }
+
+  return fetchProducts({
+    page,
+    category: categoryId,
+    orderby: options.orderby,
+    order: options.order,
+    stock_status: options.stock_status,
+  });
+}

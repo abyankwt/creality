@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import AvailabilityBadge from "@/components/AvailabilityBadge";
+import SmartImage from "@/components/SmartImage";
 import { useCart } from "@/context/CartContext";
+import { getProductAvailability } from "@/lib/availability";
+import { sanitizeWooDescription } from "@/lib/sanitizeWooDescription";
 import type {
   StoreProduct,
   StoreProductAttribute,
@@ -109,7 +112,7 @@ const getStockLabel = (status?: string) => {
 };
 
 const truncate = (value: string, max = 32) =>
-  value.length > max ? `${value.slice(0, max)}…` : value;
+  value.length > max ? `${value.slice(0, max)}...` : value;
 
 const Star = ({ filled }: { filled: boolean }) => (
   <svg
@@ -142,9 +145,16 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       : [{ id: 0, src: FALLBACK_IMAGE, alt: product.name }];
 
   const mainImage = selectedImage || galleryImages[0]?.src || FALLBACK_IMAGE;
-  const stockLabel = getStockLabel(product.stock_status);
-  const isOutOfStock = product.stock_status === "outofstock";
-  const isAvailable = Boolean(product.purchasable && !isOutOfStock);
+  const availability = getProductAvailability(product);
+  const cleanDescription = sanitizeWooDescription(product.description);
+  const stockLabel =
+    availability.type === "available"
+      ? getStockLabel(product.stock_status)
+      : availability.label;
+  const isAvailable = Boolean(
+    product.purchasable &&
+      (product.stock_status !== "outofstock" || availability.type !== "available")
+  );
   const videoUrl = extractVideoUrl(product.meta_data);
   const embedUrl = getEmbedUrl(videoUrl);
   const thumbImage = product.images?.[0]?.src ?? FALLBACK_IMAGE;
@@ -184,7 +194,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         params.set("category", String(categoryId));
         params.set("exclude", String(product.id));
 
-        const response = await fetch(`/api/store/products?${params.toString()}`);
+        const response = await fetch(`/api/products?${params.toString()}`);
         const data = await response.json();
         const products = Array.isArray(data) ? data : data?.products ?? [];
         const filtered = products.filter(
@@ -276,182 +286,216 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       : undefined;
 
   return (
-    <div className="bg-[#f8f8f8]">
-      <div className="mx-auto w-full max-w-6xl px-4 pb-12 pt-6 sm:px-6 sm:pt-8 lg:px-8">
-        <div className="grid gap-5 lg:gap-6 lg:grid-cols-[2fr_2fr_1fr]">
-          {/* Thumbnail sidebar — desktop only */}
-          <div className="order-2 hidden flex-col gap-3 lg:order-1 lg:flex">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">
-              Views
-            </p>
-            <div className="flex flex-col gap-3">
-              {galleryImages.map((image) => {
-                const isActive = selectedImage === image.src;
-                return (
-                  <button
-                    key={image.id}
-                    type="button"
-                    onClick={() => handleImageSelect(image.src)}
-                    className={`relative h-24 w-24 overflow-hidden rounded-xl border transition ${isActive ? "border-black" : "border-gray-200"
+    <div className="product-page bg-[#f8f8f8]">
+      <section className="product-summary px-4 pb-12 pt-6 sm:px-6 sm:pt-8 lg:px-8">
+        <div className="gallery">
+          <div className="grid gap-5 lg:grid-cols-[112px_minmax(0,1fr)] lg:items-start">
+            <div className="order-2 hidden flex-col gap-3 lg:order-1 lg:flex">
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-500">
+                Views
+              </p>
+              <div className="flex flex-col gap-3">
+                {galleryImages.map((image) => {
+                  const isActive = selectedImage === image.src;
+                  return (
+                    <button
+                      key={image.id}
+                      type="button"
+                      onClick={() => handleImageSelect(image.src)}
+                      className={`relative h-24 w-24 overflow-hidden rounded-xl border transition ${
+                        isActive ? "border-black" : "border-gray-200"
                       }`}
-                    aria-label={`View ${product.name} image`}
-                  >
-                    <Image
-                      src={image.src}
-                      alt={image.alt ?? product.name}
-                      fill
-                      sizes="96px"
-                      className="object-cover"
-                      loading="lazy"
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Main image */}
-          <section className="order-1 lg:order-2">
-            {/* Mobile: horizontal scroll gallery */}
-            <div className="lg:hidden">
-              <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2">
-                {galleryImages.map((image, index) => (
-                  <div
-                    key={image.id}
-                    className="relative aspect-[4/3] w-[82%] max-h-[55vh] flex-shrink-0 snap-center overflow-hidden rounded-xl border border-gray-200 bg-white"
-                  >
-                    <Image
-                      src={image.src}
-                      alt={image.alt ?? product.name}
-                      fill
-                      sizes="80vw"
-                      className="object-cover"
-                      priority={index === 0}
-                    />
-                  </div>
-                ))}
+                      aria-label={`View ${product.name} image`}
+                    >
+                      <SmartImage
+                        src={image.src}
+                        alt={image.alt ?? product.name}
+                        mode="product"
+                        sizes="96px"
+                        className="rounded-xl"
+                      />
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Desktop: single large image */}
-            <div className="relative hidden aspect-[4/3] w-full overflow-hidden rounded-xl border border-gray-200 bg-white lg:block">
-              <Image
-                src={mainImage}
-                alt={product.name}
-                fill
-                sizes="(max-width: 1024px) 100vw, 40vw"
-                className={`object-cover transition duration-200 ease-out ${imageFade ? "opacity-0" : "opacity-100"
-                  } lg:hover:scale-[1.03]`}
-                priority
-              />
-            </div>
-          </section>
-
-          {/* Product info aside */}
-          <aside className="order-3">
-            <div className="rounded-xl border border-gray-200 bg-white p-4 lg:p-5 lg:sticky lg:top-24">
-              <div className="flex flex-col gap-3 lg:gap-4">
-                <div className="order-1">
-                  <h1 className="text-xl font-semibold text-gray-900 lg:text-2xl">
-                    {product.name}
-                  </h1>
-                  {showRating && (
-                    <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
-                      <div className="flex items-center">
-                        {Array.from({ length: 5 }).map((_, index) => (
-                          <Star key={index} filled={index < Math.round(ratingValue)} />
-                        ))}
-                      </div>
-                      <span>
-                        {ratingValue.toFixed(1)} ({reviewCount})
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div
-                  className="order-2 text-2xl font-semibold text-gray-900 lg:text-3xl"
-                  aria-label={priceAriaLabel}
-                >
-                  {renderPrice(product)}
-                </div>
-
-                <div ref={primaryActionsRef} className="order-3 space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center rounded-lg border border-gray-200">
-                      <button
-                        type="button"
-                        onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-                        className="h-10 w-10 rounded-l-lg text-lg font-semibold text-gray-500 hover:bg-gray-50 transition"
-                        aria-label="Decrease quantity"
-                      >
-                        −
-                      </button>
-                      <span className="min-w-[44px] text-center text-sm font-semibold text-gray-800">
-                        {quantity}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setQuantity((prev) => prev + 1)}
-                        className="h-10 w-10 rounded-r-lg text-lg font-semibold text-gray-500 hover:bg-gray-50 transition"
-                        aria-label="Increase quantity"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleAddToCart}
-                    disabled={!isAvailable || adding}
-                    className="w-full rounded-lg bg-black px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
-                  >
-                    {adding ? "Adding…" : "Add to cart"}
-                  </button>
-                </div>
-
-                <div className="order-4 flex flex-col gap-1 text-sm">
-                  <span
-                    className={`font-semibold ${stockLabel === "In stock" ? "text-green-600" : "text-red-500"
-                      }`}
-                  >
-                    {stockLabel}
-                  </span>
-                  {isLowStock && (
-                    <span className="text-xs text-amber-600">
-                      Low stock. Confirm availability.
-                    </span>
-                  )}
-                </div>
-
-                {product.short_description && (
-                  <div
-                    className="order-5 text-sm leading-6 text-gray-600"
-                    dangerouslySetInnerHTML={{ __html: product.short_description }}
-                  />
-                )}
-
-                <div className="order-6 grid grid-cols-1 gap-2 text-xs font-semibold text-gray-600">
-                  {[
-                    "1-year warranty",
-                    "Local Kuwait delivery",
-                    "Genuine products",
-                  ].map((label) => (
+            <section className="order-1">
+              <div className="lg:hidden">
+                <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2">
+                  {galleryImages.map((image, index) => (
                     <div
-                      key={label}
-                      className="rounded-lg border border-gray-200 px-3 py-2"
+                      key={image.id}
+                      className="w-[82%] max-h-[55vh] flex-shrink-0 snap-center overflow-hidden rounded-xl border border-gray-200 bg-white"
                     >
-                      {label}
+                      <SmartImage
+                        src={image.src}
+                        alt={image.alt ?? product.name}
+                        mode="product"
+                        sizes="80vw"
+                        priority={index === 0}
+                      />
                     </div>
                   ))}
                 </div>
               </div>
-            </div>
-          </aside>
+
+              <div className="relative hidden overflow-hidden rounded-xl border border-gray-200 bg-white lg:block">
+                <SmartImage
+                  src={mainImage}
+                  alt={product.name}
+                  mode="product"
+                  sizes="(max-width: 1024px) 100vw, 40vw"
+                  className="rounded-xl"
+                  imageClassName={`transition duration-200 ease-out ${
+                    imageFade ? "opacity-0" : "opacity-100"
+                  } lg:hover:scale-[1.03]`}
+                  priority
+                />
+              </div>
+            </section>
+          </div>
         </div>
 
-        {/* Below-the-fold sections */}
+        <aside className="product-info">
+          <div className="rounded-xl border border-gray-200 bg-white p-4 lg:sticky lg:top-24 lg:p-5">
+            <div className="flex flex-col gap-3 lg:gap-4">
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900 lg:text-2xl">
+                  {product.name}
+                </h1>
+                {showRating && (
+                  <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
+                    <div className="flex items-center">
+                      {Array.from({ length: 5 }).map((_, index) => (
+                        <Star key={index} filled={index < Math.round(ratingValue)} />
+                      ))}
+                    </div>
+                    <span>
+                      {ratingValue.toFixed(1)} ({reviewCount})
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div
+                className="text-2xl font-semibold text-gray-900 lg:text-3xl"
+                aria-label={priceAriaLabel}
+              >
+                {renderPrice(product)}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <AvailabilityBadge availability={availability} />
+                {availability.type !== "available" && (
+                  <span className="text-sm font-medium text-gray-500">
+                    Estimated lead time: {availability.leadTime}
+                  </span>
+                )}
+              </div>
+
+              <div ref={primaryActionsRef} className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center rounded-lg border border-gray-200">
+                    <button
+                      type="button"
+                      onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                      className="h-10 w-10 rounded-l-lg text-lg font-semibold text-gray-500 transition hover:bg-gray-50"
+                      aria-label="Decrease quantity"
+                    >
+                      -
+                    </button>
+                    <span className="min-w-[44px] text-center text-sm font-semibold text-gray-800">
+                      {quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setQuantity((prev) => prev + 1)}
+                      className="h-10 w-10 rounded-r-lg text-lg font-semibold text-gray-500 transition hover:bg-gray-50"
+                      aria-label="Increase quantity"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  disabled={!isAvailable || adding}
+                  className="w-full rounded-lg bg-black px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+                >
+                  {adding ? "Adding..." : "Add to cart"}
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-1 text-sm">
+                <span
+                  className={`font-semibold ${
+                    availability.type === "available"
+                      ? stockLabel === "In stock"
+                        ? "text-green-600"
+                        : "text-red-500"
+                      : availability.type === "special"
+                      ? "text-orange-600"
+                      : "text-purple-600"
+                  }`}
+                >
+                  {stockLabel}
+                </span>
+                {availability.type !== "available" && (
+                  <span className="text-xs text-orange-600">
+                    Special handling. Non-refundable before arrival.
+                  </span>
+                )}
+                {isLowStock && (
+                  <span className="text-xs text-amber-600">
+                    Low stock. Confirm availability.
+                  </span>
+                )}
+              </div>
+
+              {product.short_description && (
+                <div
+                  className="text-sm leading-6 text-gray-600"
+                  dangerouslySetInnerHTML={{ __html: product.short_description }}
+                />
+              )}
+
+              <div className="grid grid-cols-1 gap-2 text-xs font-semibold text-gray-600">
+                {[
+                  "1-year warranty",
+                  "Local Kuwait delivery",
+                  "Genuine products",
+                ].map((label) => (
+                  <div
+                    key={label}
+                    className="rounded-lg border border-gray-200 px-3 py-2"
+                  >
+                    {label}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      {cleanDescription && (
+        <section className="product-marketing bg-[#f8f8f8]">
+          <div className="mx-auto w-full max-w-7xl">
+            <h2 className="mb-6 px-4 pt-8 text-2xl font-bold text-gray-900 md:px-8">
+              Overview
+            </h2>
+          </div>
+          <div
+            className="marketing-content"
+            dangerouslySetInnerHTML={{ __html: cleanDescription }}
+          />
+        </section>
+      )}
+
+      <div className="mx-auto w-full max-w-6xl px-4 pb-12 sm:px-6 lg:px-8">
         <section className="mt-5 flex flex-col gap-5 md:mt-8 md:gap-8">
           {highlightAttributes.length > 0 && (
             <div className="order-1 rounded-xl border border-gray-200 bg-white p-4 md:p-5">
@@ -516,14 +560,13 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           </div>
         </section>
 
-        {/* Related products */}
         <section className="mt-8 md:mt-10">
           <div className="mb-4 flex items-end justify-between">
             <h2 className="text-lg font-semibold text-gray-900">Related products</h2>
           </div>
           {relatedLoading ? (
             <div className="rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
-              Loading related products…
+              Loading related products...
             </div>
           ) : relatedProducts.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
@@ -537,18 +580,23 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                   href={`/product/${related.slug}`}
                   className="group rounded-xl border border-gray-200 bg-white p-3 transition hover:border-gray-300"
                 >
-                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-gray-100">
-                    <Image
+                  <div className="relative">
+                    <SmartImage
                       src={related.images?.[0]?.src ?? FALLBACK_IMAGE}
                       alt={related.images?.[0]?.alt ?? related.name}
-                      fill
+                      mode="product"
                       sizes="(max-width: 1024px) 50vw, 25vw"
-                      className="object-cover"
-                      loading="lazy"
+                      className="rounded-lg"
                     />
+                    <div className="absolute right-2 top-2">
+                      <AvailabilityBadge
+                        availability={getProductAvailability(related)}
+                        className="shadow-sm"
+                      />
+                    </div>
                   </div>
                   <div className="mt-2 space-y-1">
-                    <p className="text-sm font-semibold text-gray-900 line-clamp-2">
+                    <p className="line-clamp-2 text-sm font-semibold text-gray-900">
                       {related.name}
                     </p>
                     <div className="text-sm font-semibold text-gray-900">
@@ -565,38 +613,23 @@ export default function ProductDetail({ product }: ProductDetailProps) {
         </section>
       </div>
 
-      {/* Full-width Description Layer */}
-      {product.description && (
-        <div className="w-full bg-[#f8f8f8]">
-          <div className="mx-auto w-full max-w-7xl">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 px-4 md:px-8 pt-8">Overview</h2>
-          </div>
-          <div
-            className="w-full [&_p]:m-0 [&_p]:p-0 [&_img]:w-full [&_img]:h-auto [&_img]:block [&_img]:m-0 [&_img]:rounded-none [&_img:not(:last-child)]:mb-[-1px] max-w-none text-gray-800"
-            dangerouslySetInnerHTML={{ __html: product.description }}
-          />
-        </div>
-      )}
-
-      {/* ─── Sticky Mobile Add-to-Cart Bar ─── */}
       <div
-        className={`fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white lg:hidden transition-transform duration-300 ease-out ${showSticky ? "translate-y-0" : "translate-y-full"
-          }`}
+        className={`fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white transition-transform duration-300 ease-out lg:hidden ${
+          showSticky ? "translate-y-0" : "translate-y-full"
+        }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         aria-hidden={!showSticky}
       >
         <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 py-3 sm:px-6">
-          {/* Product thumbnail */}
-          <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-gray-100">
-            <Image
+          <div className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-gray-100">
+            <SmartImage
               src={thumbImage}
               alt={product.name}
-              fill
+              mode="product"
               sizes="44px"
-              className="object-cover"
+              className="rounded-none"
             />
           </div>
-          {/* Product info */}
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-semibold text-gray-900">
               {truncate(product.name, 28)}
@@ -608,26 +641,25 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               {renderPrice(product)}
             </div>
           </div>
-          {/* Add to Cart CTA */}
           <button
             type="button"
             onClick={handleStickyAddToCart}
             disabled={!isAvailable || adding}
             className="flex-shrink-0 rounded-lg bg-black px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
           >
-            {isAvailable ? (adding ? "…" : "Add to cart") : "Out of stock"}
+            {isAvailable ? (adding ? "..." : "Add to cart") : "Out of stock"}
           </button>
         </div>
       </div>
 
-      {/* Toast notification */}
       {toast && (
         <div className="fixed bottom-20 left-1/2 z-50 w-[90%] max-w-sm -translate-x-1/2 rounded-lg border px-4 py-3 text-sm sm:bottom-8">
           <div
-            className={`rounded-md px-3 py-2 text-center font-semibold ${toast.type === "success"
-              ? "border border-green-200 bg-green-50 text-green-700"
-              : "border border-red-200 bg-red-50 text-red-600"
-              }`}
+            className={`rounded-md px-3 py-2 text-center font-semibold ${
+              toast.type === "success"
+                ? "border border-green-200 bg-green-50 text-green-700"
+                : "border border-red-200 bg-red-50 text-red-600"
+            }`}
           >
             {toast.message}
           </div>

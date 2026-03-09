@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { CampaignSlide } from "@/config/campaigns";
+import SmartImage from "@/components/SmartImage";
 
 type CampaignHeroProps = {
     slides: CampaignSlide[];
@@ -48,17 +48,16 @@ export default function CampaignHero({ slides }: CampaignHeroProps) {
                                 }`}
                         >
                             {/* Background image */}
-                            <div className="absolute inset-0 flex items-center justify-center p-2 md:p-0">
-                                <div className="relative h-full w-full">
-                                    <Image
-                                        src={slide.backgroundImage}
-                                        alt={slide.title}
-                                        fill
-                                        priority={index === 0}
-                                        sizes="100vw"
-                                        className="object-contain md:object-cover object-center transition-transform duration-500 ease-out"
-                                    />
-                                </div>
+                            <div className="absolute inset-0">
+                                <SmartImage
+                                    src={slide.backgroundImage}
+                                    alt={slide.title}
+                                    mode="banner"
+                                    priority={index === 0}
+                                    sizes="100vw"
+                                    className="h-full rounded-none"
+                                    imageClassName="transition-transform duration-500 ease-out"
+                                />
                             </div>
 
                             {/* Subtle overlay */}

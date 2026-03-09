@@ -8,6 +8,7 @@ import { Menu, ShoppingBag, User } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import type { UserSession } from "@/lib/types";
 import type { CategoryNode } from "@/lib/categories";
+import SearchBar from "@/components/SearchBar";
 import StoreSwitcher from "./StoreSwitcher";
 import MegaMenu from "./MegaMenu";
 import MobileMenu from "./MobileMenu";
@@ -129,6 +130,7 @@ export default function Navbar({ categories = [] }: NavbarProps) {
         </div>
 
         <div className="hidden items-center gap-4 lg:flex">
+          <SearchBar />
           <Link
             href="/cart"
             className="relative text-[#0b0b0b] transition hover:text-black"

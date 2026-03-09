@@ -1,23 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ProductCard from "./ProductCard";
-
-type ProductImage = {
-    id: number;
-    src: string;
-    alt?: string | null;
-};
-
-type Product = {
-    id: number;
-    name: string;
-    slug: string;
-    price: string;
-    purchasable: boolean;
-    stock_status: string;
-    images: ProductImage[];
-};
+import type { Product } from "@/lib/woocommerce-types";
 
 type ProductGridProps = {
     initialProducts: Product[];
@@ -65,7 +50,10 @@ export default function ProductGrid({
             const res = await fetch(`/api/products?page=${nextPage}&per_page=12`);
             if (!res.ok) throw new Error("Failed to fetch products");
 
-            const data = await res.json();
+            const data = (await res.json()) as {
+                products: Product[];
+                pagination: { totalPages: number };
+            };
             setProducts((prev) => [...prev, ...data.products]);
             setPage(nextPage);
             setHasMore(nextPage < data.pagination.totalPages);
@@ -79,22 +67,16 @@ export default function ProductGrid({
     return (
         <>
             <div className="px-3 sm:px-0">
-                <div className="grid grid-cols-2 gap-3 [@media(min-width:420px)]:grid-cols-3 lg:grid-cols-4">
-                    {products.map((product, index) => (
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                    {products.map((product) => (
                         <ProductCard
                             key={product.id}
-                            product={{
-                                id: product.id,
-                                images: product.images,
-                                purchasable: product.purchasable,
-                                stock_status: product.stock_status,
-                            }}
+                            product={product}
                             imageUrl={product.images?.[0]?.src ?? ""}
                             title={product.name}
-                            price={parseFloat(product.price)}
+                            price={product.price}
                             slug={product.slug}
                             onAddToCart={handleAddedToCart}
-                            priority={index < 6}
                         />
                     ))}
                 </div>
@@ -128,7 +110,7 @@ export default function ProductGrid({
                                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                                     />
                                 </svg>
-                                Loading…
+                                Loading...
                             </span>
                         ) : (
                             "Load more products"
@@ -140,8 +122,9 @@ export default function ProductGrid({
             <div
                 role="status"
                 aria-live="polite"
-                className={`pointer-events-none fixed inset-x-0 bottom-5 z-50 flex justify-center px-4 transition duration-200 ${showToast ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
-                    }`}
+                className={`pointer-events-none fixed inset-x-0 bottom-5 z-50 flex justify-center px-4 transition duration-200 ${
+                    showToast ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+                }`}
             >
                 <div className="rounded-full bg-black px-4 py-2 text-xs font-semibold text-white shadow-lg">
                     Added to cart

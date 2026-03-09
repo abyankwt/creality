@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { fetchStoreProductBySlug } from "@/lib/store";
 import ProductDetail from "@/components/ProductDetail";
@@ -37,7 +37,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const product = await fetchStoreProductBySlug(slug);
 
   if (!product) {
-    notFound();
+    console.warn(`[ProductPage] Missing product slug: ${slug}`);
+    redirect("/store");
   }
 
   return <ProductDetail product={product} />;

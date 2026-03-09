@@ -4,13 +4,11 @@ import StoreProductCard, { type StoreProduct } from "./ProductCard";
 type FeaturedProductsProps = {
   title?: string;
   products: StoreProduct[];
-  totalCount?: number;
 };
 
 export default function FeaturedProducts({
   title = "Featured printers",
   products,
-  totalCount,
 }: FeaturedProductsProps) {
   return (
     <section className="mx-auto w-full max-w-6xl px-4 pb-14 sm:px-6 lg:px-8">
@@ -36,7 +34,7 @@ export default function FeaturedProducts({
           No products found.
         </div>
       ) : (
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 lg:gap-5 xl:grid-cols-4">
+        <div className="product-grid mt-5">
           {products.map((product) => (
             <StoreProductCard key={product.id} product={product} />
           ))}

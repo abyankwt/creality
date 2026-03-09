@@ -1,19 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2, ShieldCheck, CreditCard, Banknote, Clock, LogIn, UserPlus } from "lucide-react";
+import {
+    Loader2,
+    ShieldCheck,
+    CreditCard,
+    Banknote,
+    Clock,
+    LogIn,
+    UserPlus,
+} from "lucide-react";
+import AvailabilityBadge from "@/components/AvailabilityBadge";
+import OrderWarningModal from "@/components/OrderWarningModal";
+import SmartImage from "@/components/SmartImage";
 import { useCart } from "@/context/CartContext";
 import { submitCheckout, type BillingAddress } from "@/lib/cart";
+import {
+    requiresOrderWarning,
+    type ProductAvailability,
+} from "@/lib/availability";
 
 type AuthUser = { userId: number; name: string; email: string } | null;
 type AuthMeResponse =
     | { authenticated: false }
     | { authenticated: true; user: { id: number; name: string; email: string } };
-
-/* ── Payment gateway options ── */
 
 const PAYMENT_METHODS = [
     {
@@ -36,8 +48,6 @@ const PAYMENT_METHODS = [
     },
 ] as const;
 
-/* ── Default billing values ── */
-
 const emptyBilling: BillingAddress = {
     first_name: "",
     last_name: "",
@@ -51,23 +61,24 @@ const emptyBilling: BillingAddress = {
 
 export default function CheckoutPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { cart, loading: cartLoading, itemCount } = useCart();
 
     const [billing, setBilling] = useState<BillingAddress>(emptyBilling);
     const [paymentMethod, setPaymentMethod] = useState<string>(PAYMENT_METHODS[0].id);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    /* ── Auth state ── */
     const [user, setUser] = useState<AuthUser>(null);
     const [authChecked, setAuthChecked] = useState(false);
+    const [warningOpen, setWarningOpen] = useState(false);
+    const [warningAccepted, setWarningAccepted] = useState(false);
 
     useEffect(() => {
         const checkAuth = async () => {
             try {
-                const res = await fetch("/api/auth/me", { credentials: "include" });
-                if (res.ok) {
-                    const data = (await res.json()) as AuthMeResponse;
+                const response = await fetch("/api/auth/me", { credentials: "include" });
+                if (response.ok) {
+                    const data = (await response.json()) as AuthMeResponse;
                     if (data.authenticated) {
                         const sessionUser = {
                             userId: data.user.id,
@@ -75,33 +86,30 @@ export default function CheckoutPage() {
                             email: data.user.email,
                         };
                         setUser(sessionUser);
-                        // Auto-fill billing from session
                         const nameParts = (sessionUser.name || "").split(" ");
-                        setBilling((prev) => ({
-                            ...prev,
-                            first_name: prev.first_name || nameParts[0] || "",
-                            last_name: prev.last_name || nameParts.slice(1).join(" ") || "",
-                            email: prev.email || sessionUser.email || "",
+                        setBilling((previous) => ({
+                            ...previous,
+                            first_name: previous.first_name || nameParts[0] || "",
+                            last_name: previous.last_name || nameParts.slice(1).join(" ") || "",
+                            email: previous.email || sessionUser.email || "",
                         }));
                     }
                 }
             } catch {
-                // Not logged in
+                // no-op
             } finally {
                 setAuthChecked(true);
             }
         };
-        checkAuth();
+
+        void checkAuth();
     }, []);
 
-    /* ── If cart is empty after loading, redirect to /store ── */
     useEffect(() => {
         if (!cartLoading && cart && cart.items.length === 0) {
             router.replace("/store");
         }
     }, [cart, cartLoading, router]);
-
-    /* ── Helpers ── */
 
     const decodeHtml = (html: string) => {
         if (typeof document === "undefined") return html;
@@ -122,23 +130,56 @@ export default function CheckoutPage() {
 
     const minorUnit = cart?.totals?.currency_minor_unit ?? 3;
 
-    /* ── Handle field changes ── */
+    const items = cart?.items ?? [];
+    const protectedItems = items.filter((item) =>
+        item.availability ? requiresOrderWarning(item.availability) : false
+    );
+    const primaryWarningAvailability: ProductAvailability =
+        protectedItems[0]?.availability ?? {
+            type: "special",
+            label: "Special Order",
+            badge: "Special Order",
+            leadTime: "10-12 days",
+        };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setBilling((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    useEffect(() => {
+        if (protectedItems.length === 0) {
+            setWarningAccepted(true);
+            setWarningOpen(false);
+            return;
+        }
+
+        const acceptedFromQuery = searchParams.get("warning") === "accepted";
+        setWarningAccepted(acceptedFromQuery);
+        setWarningOpen(!acceptedFromQuery);
+    }, [protectedItems.length, searchParams]);
+
+    const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+        setBilling((previous) => ({
+            ...previous,
+            [event.target.name]: event.target.value,
+        }));
     };
 
-    /* ── Submit checkout ── */
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async (event: FormEvent) => {
+        event.preventDefault();
         setError(null);
+
+        if (protectedItems.length > 0 && !warningAccepted) {
+            setError(
+                "Please acknowledge the non-refundable policy for special order or pre-order items."
+            );
+            setWarningOpen(true);
+            return;
+        }
+
         setSubmitting(true);
 
         try {
             const result = await submitCheckout({
                 billing_address: billing,
                 payment_method: paymentMethod,
+                order_warning_acknowledged: protectedItems.length === 0 || warningAccepted,
             });
 
             if (result.redirect_url) {
@@ -147,14 +188,13 @@ export default function CheckoutPage() {
                 router.push(`/order-success?order=${result.order_id}`);
             }
         } catch (err) {
-            const msg =
+            const message =
                 err instanceof Error ? err.message : "Checkout failed. Please try again.";
-            setError(msg);
+            setError(message);
             setSubmitting(false);
         }
     };
 
-    /* ── Loading skeleton ── */
     if (!cart && cartLoading) {
         return (
             <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
@@ -162,9 +202,9 @@ export default function CheckoutPage() {
                     Checkout
                 </h1>
                 <div className="space-y-4">
-                    {[1, 2, 3].map((i) => (
+                    {[1, 2, 3].map((index) => (
                         <div
-                            key={i}
+                            key={index}
                             className="h-20 animate-pulse rounded-xl bg-gray-100"
                         />
                     ))}
@@ -182,9 +222,9 @@ export default function CheckoutPage() {
                     Checkout
                 </h1>
                 <div className="space-y-4">
-                    {[1, 2, 3].map((i) => (
+                    {[1, 2, 3].map((index) => (
                         <div
-                            key={i}
+                            key={index}
                             className="h-20 animate-pulse rounded-xl bg-gray-100"
                         />
                     ))}
@@ -193,7 +233,6 @@ export default function CheckoutPage() {
         );
     }
 
-    /* ── Auth gate — must be logged in ── */
     if (authChecked && !user) {
         return (
             <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
@@ -205,7 +244,8 @@ export default function CheckoutPage() {
                         Please log in to continue
                     </h2>
                     <p className="mt-2 text-sm text-gray-600">
-                        You need an account to place an order. This lets you track your orders, reorder items, and manage your account.
+                        You need an account to place an order. This lets you track
+                        your orders, reorder items, and manage your account.
                     </p>
                     <div className="mt-5 flex flex-wrap gap-3">
                         <Link
@@ -228,8 +268,6 @@ export default function CheckoutPage() {
         );
     }
 
-    const items = cart.items;
-
     return (
         <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
             <h1 className="mb-8 text-2xl font-bold tracking-tight text-gray-900">
@@ -237,7 +275,6 @@ export default function CheckoutPage() {
             </h1>
 
             <form onSubmit={handleSubmit} className="space-y-8">
-                {/* ── Order Summary ── */}
                 <section>
                     <h2 className="mb-4 text-lg font-semibold text-gray-900">
                         Order Summary
@@ -247,33 +284,40 @@ export default function CheckoutPage() {
                             const imageSrc =
                                 item.images?.[0]?.thumbnail ||
                                 item.images?.[0]?.src ||
-                                "/placeholder.png";
+                                "/images/product-placeholder.svg";
                             const lineTotal = formatPrice(
                                 item.totals?.line_total ?? "0",
                                 minorUnit
                             );
 
                             return (
-                                <div
-                                    key={item.key}
-                                    className="flex items-center gap-4 px-4 py-3"
-                                >
-                                    <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-gray-50">
-                                        <Image
+                                <div key={item.key} className="flex items-center gap-4 px-4 py-3">
+                                    <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-gray-50">
+                                        <SmartImage
                                             src={imageSrc}
                                             alt={decodeHtml(item.name)}
-                                            fill
+                                            mode="product"
                                             sizes="56px"
-                                            className="object-contain p-1"
+                                            className="rounded-none"
                                         />
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <p className="truncate text-sm font-medium text-gray-900">
                                             {decodeHtml(item.name)}
                                         </p>
-                                        <p className="text-xs text-gray-500">
-                                            Qty: {item.quantity}
-                                        </p>
+                                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                                            {item.availability && (
+                                                <AvailabilityBadge availability={item.availability} />
+                                            )}
+                                            <p className="text-xs text-gray-500">
+                                                Qty: {item.quantity}
+                                            </p>
+                                            {item.availability && item.availability.type !== "available" && (
+                                                <p className="text-xs text-gray-500">
+                                                    Lead time: {item.availability.leadTime}
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
                                     <p className="whitespace-nowrap text-sm font-semibold text-gray-900">
                                         {currency} {lineTotal}
@@ -282,16 +326,12 @@ export default function CheckoutPage() {
                             );
                         })}
 
-                        {/* Totals row */}
                         <div className="space-y-2 bg-gray-50 px-4 py-4">
                             <div className="flex justify-between text-sm text-gray-600">
                                 <span>Subtotal ({itemCount} items)</span>
                                 <span className="font-medium text-gray-900">
                                     {currency}{" "}
-                                    {formatPrice(
-                                        cart.totals?.total_items ?? "0",
-                                        minorUnit
-                                    )}
+                                    {formatPrice(cart.totals?.total_items ?? "0", minorUnit)}
                                 </span>
                             </div>
                             {Number(cart.totals?.total_shipping ?? 0) > 0 && (
@@ -299,10 +339,7 @@ export default function CheckoutPage() {
                                     <span>Shipping</span>
                                     <span className="font-medium text-gray-900">
                                         {currency}{" "}
-                                        {formatPrice(
-                                            cart.totals.total_shipping,
-                                            minorUnit
-                                        )}
+                                        {formatPrice(cart.totals.total_shipping, minorUnit)}
                                     </span>
                                 </div>
                             )}
@@ -311,10 +348,7 @@ export default function CheckoutPage() {
                                     <span>Discount</span>
                                     <span className="font-medium">
                                         -{currency}{" "}
-                                        {formatPrice(
-                                            cart.totals.total_discount,
-                                            minorUnit
-                                        )}
+                                        {formatPrice(cart.totals.total_discount, minorUnit)}
                                     </span>
                                 </div>
                             )}
@@ -323,10 +357,7 @@ export default function CheckoutPage() {
                                     <span>Total</span>
                                     <span>
                                         {currency}{" "}
-                                        {formatPrice(
-                                            cart.totals?.total_price ?? "0",
-                                            minorUnit
-                                        )}
+                                        {formatPrice(cart.totals?.total_price ?? "0", minorUnit)}
                                     </span>
                                 </div>
                             </div>
@@ -334,7 +365,30 @@ export default function CheckoutPage() {
                     </div>
                 </section>
 
-                {/* ── Billing Address ── */}
+                {protectedItems.length > 0 && (
+                    <section className="rounded-xl border border-orange-200 bg-orange-50 p-5">
+                        <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-orange-700">
+                            Checkout Protection
+                        </h2>
+                        <p className="mt-2 text-sm leading-6 text-orange-800">
+                            One or more items in this order are special order or pre-order
+                            products and cannot be canceled, replaced, or refunded before
+                            arrival.
+                        </p>
+                        <label className="mt-4 flex items-start gap-3 text-sm text-orange-900">
+                            <input
+                                type="checkbox"
+                                checked={warningAccepted}
+                                onChange={(event) => setWarningAccepted(event.target.checked)}
+                                className="mt-0.5 h-4 w-4 rounded border-orange-300 text-black focus:ring-black"
+                            />
+                            <span>
+                                I understand and accept the non-refundable policy.
+                            </span>
+                        </label>
+                    </section>
+                )}
+
                 <section>
                     <h2 className="mb-4 text-lg font-semibold text-gray-900">
                         Billing Details
@@ -480,7 +534,6 @@ export default function CheckoutPage() {
                     </div>
                 </section>
 
-                {/* ── Payment Method ── */}
                 <section>
                     <h2 className="mb-4 text-lg font-semibold text-gray-900">
                         Payment Method
@@ -492,26 +545,24 @@ export default function CheckoutPage() {
                             return (
                                 <label
                                     key={method.id}
-                                    className={`flex cursor-pointer items-center gap-4 rounded-xl border px-5 py-4 transition ${selected
-                                        ? "border-black bg-gray-50 ring-1 ring-black"
-                                        : "border-gray-200 bg-white hover:border-gray-300"
-                                        }`}
+                                    className={`flex cursor-pointer items-center gap-4 rounded-xl border px-5 py-4 transition ${
+                                        selected
+                                            ? "border-black bg-gray-50 ring-1 ring-black"
+                                            : "border-gray-200 bg-white hover:border-gray-300"
+                                    }`}
                                 >
                                     <input
                                         type="radio"
                                         name="payment_method"
                                         value={method.id}
                                         checked={selected}
-                                        onChange={() =>
-                                            setPaymentMethod(method.id)
-                                        }
+                                        onChange={() => setPaymentMethod(method.id)}
                                         className="sr-only"
                                     />
                                     <div
-                                        className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${selected
-                                            ? "border-black"
-                                            : "border-gray-300"
-                                            }`}
+                                        className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
+                                            selected ? "border-black" : "border-gray-300"
+                                        }`}
                                     >
                                         {selected && (
                                             <div className="h-2.5 w-2.5 rounded-full bg-black" />
@@ -532,39 +583,36 @@ export default function CheckoutPage() {
                     </div>
                 </section>
 
-                {/* ── Error banner ── */}
                 {error && (
                     <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
                         {error}
                     </div>
                 )}
 
-                {/* ── Place Order ── */}
                 <div className="space-y-4">
                     <button
                         type="submit"
-                        disabled={submitting}
+                        disabled={submitting || (protectedItems.length > 0 && !warningAccepted)}
                         className="flex w-full items-center justify-center gap-2 rounded-full bg-black px-8 py-4 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         {submitting ? (
                             <>
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                Processing…
+                                Processing...
                             </>
                         ) : (
                             <>
-                                Place Order — {currency}{" "}
-                                {formatPrice(
-                                    cart.totals?.total_price ?? "0",
-                                    minorUnit
-                                )}
+                                Place Order - {currency}{" "}
+                                {formatPrice(cart.totals?.total_price ?? "0", minorUnit)}
                             </>
                         )}
                     </button>
 
                     <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
                         <ShieldCheck className="h-3.5 w-3.5" />
-                        <span>Secure checkout — you'll be redirected to the payment gateway</span>
+                        <span>
+                            Secure checkout - you&apos;ll be redirected to the payment gateway
+                        </span>
                     </div>
 
                     <Link
@@ -575,6 +623,17 @@ export default function CheckoutPage() {
                     </Link>
                 </div>
             </form>
+
+            <OrderWarningModal
+                open={warningOpen && protectedItems.length > 0}
+                availability={primaryWarningAvailability}
+                acknowledged={warningAccepted}
+                onAcknowledgedChange={setWarningAccepted}
+                onClose={() => setWarningOpen(false)}
+                onConfirm={() => setWarningOpen(false)}
+                confirmLabel="Continue to Review"
+                secondaryLabel="Continue in Checkout"
+            />
         </div>
     );
 }

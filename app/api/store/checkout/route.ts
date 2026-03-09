@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE_NAME, verifySession } from "@/lib/auth-session";
+import { enrichCartResponseWithAvailability } from "@/lib/cart-availability";
+import { requiresOrderWarning } from "@/lib/availability";
 
 const WC_CART_TOKEN_COOKIE = "wc_cart_token";
 const WC_NONCE_COOKIE = "wc_nonce";
@@ -28,6 +30,7 @@ type CheckoutBody = {
         postcode?: string;
     };
     payment_method: string;
+    order_warning_acknowledged?: boolean;
 };
 
 type WooCheckoutResponse = {
@@ -110,6 +113,43 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (nonce) {
         headers["Nonce"] = nonce;
+    }
+
+    let protectedItemsInCart = false;
+    try {
+        const cartResponse = await fetch(
+            `${baseUrl}/wp-json/wc/store/v1/cart`,
+            {
+                method: "GET",
+                headers,
+                cache: "no-store",
+            }
+        );
+
+        if (cartResponse.ok) {
+            const cartData = await cartResponse.json();
+            const enrichedCart = await enrichCartResponseWithAvailability(cartData);
+            protectedItemsInCart = Boolean(
+                enrichedCart &&
+                typeof enrichedCart === "object" &&
+                Array.isArray((enrichedCart as { items?: Array<{ availability?: { type: "available" | "special" | "preorder" } }> }).items) &&
+                (enrichedCart as { items: Array<{ availability?: { type: "available" | "special" | "preorder" } }> }).items.some((item) =>
+                    item.availability ? requiresOrderWarning(item.availability.type) : false
+                )
+            );
+        }
+    } catch (error) {
+        console.error("[Checkout] Failed to validate protected items:", error);
+    }
+
+    if (protectedItemsInCart && !body.order_warning_acknowledged) {
+        return NextResponse.json(
+            {
+                error:
+                    "Please acknowledge the special order or pre-order policy before checkout.",
+            },
+            { status: 400 }
+        );
     }
 
     // Use shipping = billing if not provided

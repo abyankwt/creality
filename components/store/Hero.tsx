@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import SmartImage from "@/components/SmartImage";
 
 const trustBadges = [
   "Local inventory in Kuwait",
@@ -62,16 +62,14 @@ export default function Hero() {
 
         {/* Image column */}
         <div className="order-1 lg:order-2">
-          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-gray-50 shadow-md">
-            <Image
-              src="/images/printers.jpg"
-              alt="Creality 3D printer"
-              fill
-              priority
-              sizes="(max-width: 768px) 100vw, 50vw"
-              className="object-cover"
-            />
-          </div>
+          <SmartImage
+            src="/images/printers.jpg"
+            alt="Creality 3D printer"
+            mode="banner"
+            priority
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="rounded-xl shadow-md"
+          />
         </div>
       </div>
     </section>

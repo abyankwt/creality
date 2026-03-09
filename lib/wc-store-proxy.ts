@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { enrichCartResponseWithAvailability } from "@/lib/cart-availability";
 
 const NONCE_HEADER = "Nonce";
 const CART_TOKEN_HEADER = "Cart-Token";
@@ -79,6 +80,10 @@ export async function proxyToWooStore(
     data = text ? JSON.parse(text) : null;
   } catch {
     data = text;
+  }
+
+  if (path.startsWith("cart")) {
+    data = await enrichCartResponseWithAvailability(data);
   }
 
   const nextResponse = NextResponse.json(data, {
