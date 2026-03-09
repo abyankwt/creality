@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { Suspense, useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -59,7 +59,7 @@ const emptyBilling: BillingAddress = {
     address_1: "",
 };
 
-export default function CheckoutPage() {
+function CheckoutPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { cart, loading: cartLoading, itemCount } = useCart();
@@ -635,5 +635,31 @@ export default function CheckoutPage() {
                 secondaryLabel="Continue in Checkout"
             />
         </div>
+    );
+}
+
+function CheckoutPageFallback() {
+    return (
+        <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
+            <h1 className="mb-8 text-2xl font-bold tracking-tight text-gray-900">
+                Checkout
+            </h1>
+            <div className="space-y-4">
+                {[1, 2, 3].map((index) => (
+                    <div
+                        key={index}
+                        className="h-20 animate-pulse rounded-xl bg-gray-100"
+                    />
+                ))}
+            </div>
+        </div>
+    );
+}
+
+export default function CheckoutPage() {
+    return (
+        <Suspense fallback={<CheckoutPageFallback />}>
+            <CheckoutPageContent />
+        </Suspense>
     );
 }
