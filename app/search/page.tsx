@@ -68,24 +68,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
           No products found for &quot;{query}&quot;.
         </div>
       ) : (
-        <div className="product-grid gap-3 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              imageUrl={product.images?.[0]?.src ?? ""}
-              product={{
-                id: product.id,
-                images: product.images,
-                purchasable: product.purchasable,
-                stock_status: product.stock_status,
-                price: product.price,
-                tags: product.tags,
-                categories: product.categories,
-              }}
-              title={product.name}
-              price={product.price}
-              slug={product.slug}
-            />
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       )}

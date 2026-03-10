@@ -1,9 +1,11 @@
 import { Suspense } from "react";
+import Link from "next/link";
+import CategoryNavigation from "@/components/CategoryNavigation";
+import ProductCard from "@/components/ProductCard";
 import ProductGrid from "@/components/ProductGrid";
 import FilterBar from "@/components/store/FilterBar";
 import { fetchProducts, fetchHeroImages } from "@/lib/api";
 import CampaignHero from "@/components/CampaignHero";
-import NewProductArrivals from "@/components/NewProductArrivals";
 import { CAMPAIGN_SLIDES } from "@/config/campaigns";
 
 type RawSearchParams = Record<string, string | string[] | undefined>;
@@ -76,9 +78,44 @@ export default async function HomePage({ searchParams }: PageProps) {
   return (
     <main className="bg-[#f8f8f8] text-gray-900 pb-10">
       <CampaignHero slides={dynamicSlides} />
-      <NewProductArrivals products={newProducts} />
+      <CategoryNavigation />
 
-      {/* Featured Products */}
+      <section className="bg-[#eef0f2] py-12 sm:py-16">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="mb-6 flex items-end justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 sm:text-2xl">
+                New Hardware Arrivals
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">
+                The latest additions to our production ecosystem.
+              </p>
+            </div>
+            <Link
+              href="/store?sort=date_desc"
+              className="hidden text-sm font-semibold uppercase tracking-wider text-[#6BBE45] hover:underline sm:block"
+            >
+              View all new
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {newProducts.slice(0, 4).map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+
+          <div className="mt-6 flex justify-center sm:hidden">
+            <Link
+              href="/store?sort=date_desc"
+              className="rounded-xl border border-gray-200 px-6 py-2.5 text-xs font-semibold uppercase tracking-widest text-gray-700 hover:bg-gray-50"
+            >
+              View all new
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <section className="bg-[#f8f8f8] py-8 sm:py-10">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mb-5 text-center sm:text-left">

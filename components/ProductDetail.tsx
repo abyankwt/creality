@@ -3,14 +3,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import AvailabilityBadge from "@/components/AvailabilityBadge";
+import OrderWarningModal from "@/components/OrderWarningModal";
+import ProductCard from "@/components/ProductCard";
 import SmartImage from "@/components/SmartImage";
 import { useCart } from "@/context/CartContext";
-import { getProductAvailability } from "@/lib/availability";
+import { formatPrice, getProductPriceInfo } from "@/lib/price";
+import { getProductAvailability } from "@/lib/productLogic";
 import { sanitizeWooDescription } from "@/lib/sanitizeWooDescription";
 import type {
   StoreProduct,
   StoreProductAttribute,
-  StoreProductPrices,
 } from "@/lib/store-types";
 
 const FALLBACK_IMAGE = "/images/product-placeholder.svg";
@@ -62,49 +64,6 @@ const getAttributeValues = (attribute: StoreProductAttribute) => {
   return [];
 };
 
-const getPriceNumber = (price: string, minorUnit?: number) => {
-  const numeric = Number(price);
-  if (!Number.isFinite(numeric)) return null;
-  const isMinorUnit = minorUnit !== undefined && !price.includes(".");
-  return isMinorUnit ? numeric / Math.pow(10, minorUnit) : numeric;
-};
-
-const formatPrice = (prices?: StoreProductPrices) => {
-  if (!prices?.price || !prices.currency_code) return "";
-  const minorUnit = prices.currency_minor_unit ?? 2;
-  const amount = getPriceNumber(prices.price, minorUnit);
-  if (amount === null) return "";
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: prices.currency_code,
-      minimumFractionDigits: minorUnit,
-      maximumFractionDigits: minorUnit,
-    }).format(amount);
-  } catch {
-    return `${amount.toFixed(minorUnit)} ${prices.currency_code}`;
-  }
-};
-
-const renderPrice = (product: StoreProduct) => {
-  const priceHtml = product.price_html?.trim();
-  if (priceHtml) {
-    return <span dangerouslySetInnerHTML={{ __html: priceHtml }} />;
-  }
-  const formatted = formatPrice(product.prices);
-  if (formatted) {
-    return <span>{formatted}</span>;
-  }
-  if (product.prices?.price && product.prices?.currency_code) {
-    return (
-      <span>
-        {product.prices.price} {product.prices.currency_code}
-      </span>
-    );
-  }
-  return <span>Unavailable</span>;
-};
-
 const getStockLabel = (status?: string) => {
   if (status === "instock") return "In stock";
   if (status === "onbackorder") return "Backorder";
@@ -137,6 +96,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [showSticky, setShowSticky] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
+  const [warningOpen, setWarningOpen] = useState(false);
+  const [warningAccepted, setWarningAccepted] = useState(false);
+  const [pendingQuantity, setPendingQuantity] = useState(1);
   const primaryActionsRef = useRef<HTMLDivElement | null>(null);
 
   const galleryImages =
@@ -151,13 +113,17 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     availability.type === "available"
       ? getStockLabel(product.stock_status)
       : availability.label;
-  const isAvailable = Boolean(
-    product.purchasable &&
-      (product.stock_status !== "outofstock" || availability.type !== "available")
-  );
+  const canOrder = Boolean(product.id);
+  const modalAvailability = {
+    type: availability.type,
+    label: availability.label,
+    badge: availability.label,
+    leadTime: availability.lead?.replace(/^Delivery:\s*/, "") ?? null,
+  };
   const videoUrl = extractVideoUrl(product.meta_data);
   const embedUrl = getEmbedUrl(videoUrl);
   const thumbImage = product.images?.[0]?.src ?? FALLBACK_IMAGE;
+  const priceInfo = getProductPriceInfo(product);
 
   const ratingValue = Number(product.average_rating ?? 0);
   const reviewCount = Number(product.review_count ?? 0);
@@ -245,10 +211,10 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  const handleAddToCart = async () => {
+  const performAddToCart = async (itemQuantity: number) => {
     try {
       setAdding(true);
-      await addItem(product.id, quantity);
+      await addItem(product.id, itemQuantity);
       await refreshCart();
       setToast({ message: "Added to cart.", type: "success" });
     } catch {
@@ -258,17 +224,19 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     }
   };
 
-  const handleStickyAddToCart = async () => {
-    try {
-      setAdding(true);
-      await addItem(product.id, 1);
-      await refreshCart();
-      setToast({ message: "Added to cart.", type: "success" });
-    } catch {
-      setToast({ message: "Unable to add to cart.", type: "error" });
-    } finally {
-      setAdding(false);
+  const handleAddToCart = async (itemQuantity: number) => {
+    if (adding || !canOrder) {
+      return;
     }
+
+    if (availability.type !== "available") {
+      setPendingQuantity(itemQuantity);
+      setWarningAccepted(false);
+      setWarningOpen(true);
+      return;
+    }
+
+    await performAddToCart(itemQuantity);
   };
 
   const handleImageSelect = (src: string) => {
@@ -280,10 +248,32 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     }, 160);
   };
 
-  const priceAriaLabel =
-    product.prices?.price && product.prices?.currency_code
-      ? `${product.prices.price} ${product.prices.currency_code}`
-      : undefined;
+  const renderProductPrice = () => {
+    if (priceInfo.hasSale) {
+      return (
+        <div className="product-price">
+          <span className="price-old mr-2 text-gray-400 line-through">
+            {formatPrice(priceInfo.regularPrice)}
+          </span>
+          <span className="price-sale font-semibold text-gray-900">
+            {formatPrice(priceInfo.salePrice)}
+          </span>
+        </div>
+      );
+    }
+
+    if (priceInfo.currentPrice > 0) {
+      return <div className="product-price">{formatPrice(priceInfo.currentPrice)}</div>;
+    }
+
+    return <div className="product-price">Unavailable</div>;
+  };
+
+  const priceAriaLabel = priceInfo.hasSale
+    ? `${formatPrice(priceInfo.regularPrice)} sale ${formatPrice(priceInfo.salePrice)}`
+    : priceInfo.currentPrice > 0
+    ? formatPrice(priceInfo.currentPrice)
+    : "Unavailable";
 
   return (
     <div className="product-page bg-[#f8f8f8]">
@@ -382,14 +372,16 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 className="text-2xl font-semibold text-gray-900 lg:text-3xl"
                 aria-label={priceAriaLabel}
               >
-                {renderPrice(product)}
+                {renderProductPrice()}
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <AvailabilityBadge availability={availability} />
                 {availability.type !== "available" && (
+                  <AvailabilityBadge availability={modalAvailability} />
+                )}
+                {availability.lead && (
                   <span className="text-sm font-medium text-gray-500">
-                    Estimated lead time: {availability.leadTime}
+                    {availability.lead}
                   </span>
                 )}
               </div>
@@ -421,11 +413,17 @@ export default function ProductDetail({ product }: ProductDetailProps) {
 
                 <button
                   type="button"
-                  onClick={handleAddToCart}
-                  disabled={!isAvailable || adding}
-                  className="w-full rounded-lg bg-black px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+                  onClick={() => void handleAddToCart(quantity)}
+                  disabled={adding || !canOrder}
+                  className={`w-full rounded-lg px-5 py-3.5 text-sm font-semibold text-white transition ${
+                    availability.type === "available"
+                      ? "bg-black hover:bg-gray-900"
+                      : availability.type === "special"
+                      ? "bg-[#f97316] hover:bg-[#ea580c]"
+                      : "bg-[#2563eb] hover:bg-[#1d4ed8]"
+                  } disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400`}
                 >
-                  {adding ? "Adding..." : "Add to cart"}
+                  {adding ? "Adding..." : availability.label}
                 </button>
               </div>
 
@@ -573,40 +571,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               No related products available.
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {relatedProducts.slice(0, 4).map((related) => (
-                <Link
-                  key={related.id}
-                  href={`/product/${related.slug}`}
-                  className="group rounded-xl border border-gray-200 bg-white p-3 transition hover:border-gray-300"
-                >
-                  <div className="relative">
-                    <SmartImage
-                      src={related.images?.[0]?.src ?? FALLBACK_IMAGE}
-                      alt={related.images?.[0]?.alt ?? related.name}
-                      mode="product"
-                      sizes="(max-width: 1024px) 50vw, 25vw"
-                      className="rounded-lg"
-                    />
-                    <div className="absolute right-2 top-2">
-                      <AvailabilityBadge
-                        availability={getProductAvailability(related)}
-                        className="shadow-sm"
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-2 space-y-1">
-                    <p className="line-clamp-2 text-sm font-semibold text-gray-900">
-                      {related.name}
-                    </p>
-                    <div className="text-sm font-semibold text-gray-900">
-                      {renderPrice(related)}
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      {getStockLabel(related.stock_status)}
-                    </p>
-                  </div>
-                </Link>
+                <ProductCard key={related.id} product={related} />
               ))}
             </div>
           )}
@@ -614,7 +581,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       </div>
 
       <div
-        className={`fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white transition-transform duration-300 ease-out lg:hidden ${
+        className={`sticky-order-bar fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 bg-white transition-transform duration-300 ease-out lg:hidden ${
           showSticky ? "translate-y-0" : "translate-y-full"
         }`}
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
@@ -638,16 +605,22 @@ export default function ProductDetail({ product }: ProductDetailProps) {
               className="text-sm font-semibold text-gray-900"
               aria-label={priceAriaLabel}
             >
-              {renderPrice(product)}
+              {renderProductPrice()}
             </div>
           </div>
           <button
             type="button"
-            onClick={handleStickyAddToCart}
-            disabled={!isAvailable || adding}
-            className="flex-shrink-0 rounded-lg bg-black px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-900 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+            onClick={() => void handleAddToCart(1)}
+            disabled={adding || !canOrder}
+            className={`flex-shrink-0 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition ${
+              availability.type === "available"
+                ? "bg-black hover:bg-gray-900"
+                : availability.type === "special"
+                ? "bg-[#f97316] hover:bg-[#ea580c]"
+                : "bg-[#2563eb] hover:bg-[#1d4ed8]"
+            } disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400`}
           >
-            {isAvailable ? (adding ? "..." : "Add to cart") : "Out of stock"}
+            {adding ? "..." : availability.label}
           </button>
         </div>
       </div>
@@ -665,6 +638,21 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           </div>
         </div>
       )}
+
+      <OrderWarningModal
+        open={warningOpen}
+        availability={modalAvailability}
+        acknowledged={warningAccepted}
+        onAcknowledgedChange={setWarningAccepted}
+        onClose={() => setWarningOpen(false)}
+        onConfirm={async () => {
+          setWarningOpen(false);
+          await performAddToCart(pendingQuantity);
+        }}
+        confirmLabel="Add to cart"
+        secondaryLabel="Back"
+        title="Before you continue"
+      />
     </div>
   );
 }

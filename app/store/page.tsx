@@ -5,7 +5,7 @@ import CategoryIconGrid from "@/components/CategoryIconGrid";
 import FeaturedProducts from "@/components/store/FeaturedProducts";
 import FilterBar from "@/components/store/FilterBar";
 import { fetchProductsByCategory } from "@/lib/api";
-import type { StoreProduct } from "@/components/store/ProductCard";
+import type { Product as StoreProduct } from "@/lib/woocommerce-types";
 
 type RawParams = Record<string, string | string[] | undefined>;
 

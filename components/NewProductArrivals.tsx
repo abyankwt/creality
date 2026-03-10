@@ -1,5 +1,5 @@
 import Link from "next/link";
-import StoreProductCard from "@/components/store/ProductCard";
+import ProductCard from "@/components/ProductCard";
 import type { WCProduct } from "@/lib/api";
 
 type NewProductArrivalsProps = {
@@ -29,9 +29,9 @@ export default function NewProductArrivals({ products }: NewProductArrivalsProps
                     </Link>
                 </div>
 
-                <div className="product-grid">
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {products.slice(0, 4).map((product) => (
-                        <StoreProductCard key={product.id} product={product} />
+                        <ProductCard key={product.id} product={product} />
                     ))}
                 </div>
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import StoreProductCard, { type StoreProduct } from "./ProductCard";
+import ProductCard from "@/components/ProductCard";
+import type { Product as StoreProduct } from "@/lib/woocommerce-types";
 
 type FeaturedProductsProps = {
   title?: string;
@@ -34,9 +35,9 @@ export default function FeaturedProducts({
           No products found.
         </div>
       ) : (
-        <div className="product-grid mt-5">
+        <div className="mt-5 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {products.map((product) => (
-            <StoreProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       )}

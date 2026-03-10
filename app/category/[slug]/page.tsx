@@ -77,24 +77,9 @@ export default async function CategoryPage({
           No products found in this category.
         </div>
       ) : (
-        <div className="product-grid mt-10">
+        <div className="mt-10 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {sortedProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              imageUrl={product.images?.[0]?.src ?? ""}
-              product={{
-                id: product.id,
-                images: product.images,
-                purchasable: product.purchasable,
-                stock_status: product.stock_status,
-                price: product.price,
-                tags: product.tags,
-                categories: product.categories,
-              }}
-              title={product.name}
-              price={product.price}
-              slug={product.slug}
-            />
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       )}
