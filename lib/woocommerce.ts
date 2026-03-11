@@ -61,6 +61,7 @@ type RawStoreProduct = {
   categories?: RawProductCategory[];
   tags?: RawProductTag[];
   meta_data?: ProductMeta[];
+  is_in_stock?: boolean | null;
   stock_status?: string;
   stock_quantity?: number | null;
   purchasable?: boolean;
@@ -206,6 +207,7 @@ const normalizeProduct = (product: RawStoreProduct): Product => {
     categories: (product.categories ?? []).map(normalizeCategory),
     tags: product.tags ?? [],
     meta_data: product.meta_data ?? [],
+    is_in_stock: product.is_in_stock ?? null,
     stock_status: product.stock_status ?? "outofstock",
     stock_quantity: product.stock_quantity ?? null,
     purchasable: Boolean(product.purchasable),

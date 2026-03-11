@@ -70,8 +70,15 @@ export interface Product {
   categories: ProductCategory[];
   tags: ProductTag[];
   meta_data?: ProductMeta[];
+  is_in_stock?: boolean | null;
   stock_status: string;
   stock_quantity?: number | null;
+  weight?: string | number | null;
+  dimensions?: {
+    length?: string | number | null;
+    width?: string | number | null;
+    height?: string | number | null;
+  } | null;
   purchasable: boolean;
   average_rating?: number;
   review_count?: number;

@@ -3,7 +3,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import OrderWarningModal from "@/components/OrderWarningModal";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/price";
 import { getProductAvailability } from "@/lib/productLogic";
@@ -25,10 +26,32 @@ export default function ProductCard({
   const { addItem } = useCart();
   const [loading, setLoading] = useState(false);
   const [addedFeedback, setAddedFeedback] = useState(false);
+  const [warningOpen, setWarningOpen] = useState(false);
+  const [warningAccepted, setWarningAccepted] = useState(false);
 
   const resolvedImage = product.images?.[0]?.src || fallbackImage;
   const availability = getProductAvailability(product);
-  const canAddToCart = Boolean(product.id && product.purchasable);
+  const canAddToCart = Boolean(product.id);
+  const modalAvailability = {
+    type: availability.type,
+    label: availability.label,
+    badge: availability.label,
+    leadTime: availability.lead?.replace(/^Delivery:\s*/, "") ?? null,
+  };
+
+  useEffect(() => {
+    console.log("Stock debug", {
+      name: product.name,
+      is_in_stock: product.is_in_stock,
+      stock_status: product.stock_status,
+      stock_quantity: product.stock_quantity,
+    });
+  }, [
+    product.is_in_stock,
+    product.name,
+    product.stock_quantity,
+    product.stock_status,
+  ]);
 
   const commitAddToCart = async () => {
     if (!product.id || !canAddToCart) {
@@ -62,87 +85,118 @@ export default function ProductCard({
     router.push(`/product/${product.slug}`);
   };
 
-  return (
-    <article className="product-card flex flex-col min-w-0 group relative h-full rounded-xl border border-gray-200 bg-white p-[10px] transition-all duration-200 hover:shadow-sm">
-      {availability.type !== "available" && (
-        <div className="product-badge absolute left-2 top-2 z-10 rounded-full bg-[#e5e7eb] px-[10px] py-1 text-[12px] text-gray-700">
-          {availability.label}
-        </div>
-      )}
-      <Link
-        href={`/product/${product.slug}`}
-        className="block"
-        aria-label={`View ${product.name}`}
-      >
-        <div className="product-image-wrapper relative rounded-xl bg-[#f5f5f5]">
-          <img
-            src={resolvedImage}
-            alt={product.name}
-            className="transition duration-300 group-hover:scale-[1.03]"
-          />
-        </div>
-      </Link>
+  const handleSpecialOrderClick = () => {
+    if (loading) {
+      return;
+    }
 
-      <div className="product-content flex flex-1 flex-col pt-3">
-        <Link href={`/product/${product.slug}`} className="block">
-          <h3 className="product-title min-h-[2.75rem] text-[14px] font-semibold leading-[1.3] text-text">
-            {product.name}
-          </h3>
+    setWarningAccepted(false);
+    setWarningOpen(true);
+  };
+
+  return (
+    <>
+      <article className="product-card flex flex-col min-w-0 group relative h-full rounded-xl border border-gray-200 bg-white p-[10px] transition-all duration-200 hover:shadow-sm">
+        {availability.type !== "available" && (
+          <div className="product-badge absolute left-2 top-2 z-10 rounded-full bg-[#e5e7eb] px-[10px] py-1 text-[12px] text-gray-700">
+            {availability.label}
+          </div>
+        )}
+        <Link
+          href={`/product/${product.slug}`}
+          className="block"
+          aria-label={`View ${product.name}`}
+        >
+          <div className="product-image-wrapper relative rounded-xl bg-[#f5f5f5]">
+            <img
+              src={resolvedImage}
+              alt={product.name}
+              className="transition duration-300 group-hover:scale-[1.03]"
+            />
+          </div>
         </Link>
 
-        <div className="mt-2">
-          <span className="text-sm font-bold text-text sm:text-base">
-            {formatPrice(product.price)}
-          </span>
-        </div>
-
-        {availability.lead && (
-          <p className="mt-1 text-[11px] font-medium text-gray-500">
-            {availability.lead}
-          </p>
-        )}
-
-        <div className="product-actions mt-3">
-          <Link
-            href={`/product/${product.slug}`}
-            className="inline-flex min-h-10 flex-1 items-center justify-center rounded-lg border border-gray-200 px-3 py-2 text-[13px] font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50"
-          >
-            Learn More
+        <div className="product-content flex flex-1 flex-col pt-3">
+          <Link href={`/product/${product.slug}`} className="block">
+            <h3 className="product-title min-h-[2.75rem] text-[14px] font-semibold leading-[1.3] text-text">
+              {product.name}
+            </h3>
           </Link>
-          {availability.type === "available" && (
-            <button
-              type="button"
-              onClick={handlePrimaryAction}
-              aria-label={`${availability.label} for ${product.name}`}
-              className="btn-primary inline-flex min-h-10 flex-1 items-center justify-center rounded-lg bg-[#6BBE45] px-3 py-2 text-[13px] font-semibold text-white transition duration-150 hover:bg-[#5AA73C]"
-            >
-              {loading ? "Adding..." : addedFeedback ? "Added" : "Add to Cart"}
-            </button>
-          )}
 
-          {availability.type === "special" && (
-            <button
-              type="button"
-              onClick={handlePrimaryAction}
-              aria-label={`${availability.label} for ${product.name}`}
-              className="btn-warning inline-flex min-h-10 flex-1 items-center justify-center rounded-lg bg-[#f97316] px-3 py-2 text-[13px] font-semibold text-white transition duration-150 hover:bg-[#ea580c]"
-            >
-              Special Order
-            </button>
-          )}
+          <div className="mt-2">
+            <span className="text-sm font-bold text-text sm:text-base">
+              {formatPrice(product.price)}
+            </span>
+          </div>
 
-          {availability.type === "preorder" && (
-            <button
-              type="button"
-              onClick={handlePrimaryAction}
-              aria-label={`${availability.label} for ${product.name}`}
-              className="btn-secondary inline-flex min-h-10 flex-1 items-center justify-center rounded-lg bg-[#2563eb] px-3 py-2 text-[13px] font-semibold text-white transition duration-150 hover:bg-[#1d4ed8]"
-            >
-              Pre-Order
-            </button>
-          )}
+          <div className="product-actions mt-3">
+            {availability.type === "available" && (
+              <button
+                type="button"
+                onClick={handlePrimaryAction}
+                aria-label={`${availability.label} for ${product.name}`}
+                className="btn-primary inline-flex min-h-10 w-full items-center justify-center rounded-lg bg-[#6BBE45] px-3 py-2 text-[13px] font-semibold text-white transition duration-150 hover:bg-[#5AA73C]"
+              >
+                {loading ? "Adding..." : addedFeedback ? "Added" : "Add to Cart"}
+              </button>
+            )}
+
+            {availability.type === "special" && (
+              <div className="special-order-block">
+                <p className="stock-text mb-[6px] text-[13px] text-[#6b7280]">
+                  Currently out of stock
+                </p>
+
+                <button
+                  type="button"
+                  onClick={handleSpecialOrderClick}
+                  aria-label={`${availability.label} for ${product.name}`}
+                  className="btn-special inline-flex min-h-10 w-full items-center justify-center rounded-lg bg-[#f97316] px-3 py-2 text-[13px] font-semibold text-white transition duration-150 hover:bg-[#ea580c]"
+                >
+                  Special Order
+                </button>
+
+                <p className="delivery-text mt-1 text-[12px] text-[#6b7280]">
+                  Delivery 10-12 days
+                </p>
+              </div>
+            )}
+
+            {availability.type === "preorder" && (
+              <div className="preorder-block">
+                <button
+                  type="button"
+                  onClick={handlePrimaryAction}
+                  aria-label={`${availability.label} for ${product.name}`}
+                  className="btn-secondary inline-flex min-h-10 w-full items-center justify-center rounded-lg bg-[#2563eb] px-3 py-2 text-[13px] font-semibold text-white transition duration-150 hover:bg-[#1d4ed8]"
+                >
+                  Pre-Order
+                </button>
+
+                <p className="delivery-text mt-1 text-[12px] text-[#6b7280]">
+                  Delivery 30-45 days
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </article>
+      </article>
+
+      <OrderWarningModal
+        open={warningOpen}
+        availability={modalAvailability}
+        product={product}
+        acknowledged={warningAccepted}
+        onAcknowledgedChange={setWarningAccepted}
+        onClose={() => setWarningOpen(false)}
+        onConfirm={async () => {
+          setWarningOpen(false);
+          await commitAddToCart();
+        }}
+        confirmLabel="Add to cart"
+        secondaryLabel="Back"
+        title="Before you continue"
+      />
+    </>
   );
 }

@@ -642,6 +642,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       <OrderWarningModal
         open={warningOpen}
         availability={modalAvailability}
+        product={product}
         acknowledged={warningAccepted}
         onAcknowledgedChange={setWarningAccepted}
         onClose={() => setWarningOpen(false)}
