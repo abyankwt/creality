@@ -1,108 +1,198 @@
+// TEMPORARY DEMO NAVIGATION - replace with dynamic WooCommerce categories later
 import "server-only";
 
-import type { WCCategory } from "./api";
-
 export type CategoryNode = {
-    id: number;
-    name: string;
-    slug: string;
-    image: string | null;
-    children: CategoryNode[];
+  id: number;
+  name: string;
+  slug: string;
+  image: string | null;
+  children: CategoryNode[];
 };
 
-/**
- * Fetch all WooCommerce product categories and return a parent→children tree.
- * Uses ISR with 1-hour revalidation so the menu stays fast without stale data.
- */
+const DEMO_CATEGORY_TREE: CategoryNode[] = [
+  {
+    id: 1,
+    name: "3D Printers",
+    slug: "3d-printers",
+    image: null,
+    children: [
+      {
+        id: 101,
+        name: "K Series",
+        slug: "k-series",
+        image: null,
+        children: [],
+      },
+      {
+        id: 102,
+        name: "Ender Series",
+        slug: "ender-series",
+        image: null,
+        children: [],
+      },
+      {
+        id: 103,
+        name: "Spark i7",
+        slug: "spark-i7",
+        image: null,
+        children: [],
+      },
+      {
+        id: 104,
+        name: "Hi Printer",
+        slug: "hi-printer",
+        image: null,
+        children: [],
+      },
+      {
+        id: 105,
+        name: "Sermoon Series",
+        slug: "sermoon-series",
+        image: null,
+        children: [],
+      },
+      {
+        id: 106,
+        name: "Halot Series",
+        slug: "halot-series",
+        image: null,
+        children: [],
+      },
+    ],
+  },
+  {
+    id: 2,
+    name: "3D Scanners",
+    slug: "3d-scanners",
+    image: null,
+    children: [
+      {
+        id: 201,
+        name: "3D Scanner Series",
+        slug: "3d-scanner-series",
+        image: null,
+        children: [],
+      },
+    ],
+  },
+  {
+    id: 3,
+    name: "Accessories",
+    slug: "accessories",
+    image: null,
+    children: [
+      {
+        id: 301,
+        name: "Filament Dryer",
+        slug: "filament-dryer",
+        image: null,
+        children: [],
+      },
+      {
+        id: 302,
+        name: "Tools",
+        slug: "tools",
+        image: null,
+        children: [],
+      },
+      {
+        id: 303,
+        name: "Auto Leveling",
+        slug: "auto-leveling",
+        image: null,
+        children: [],
+      },
+      {
+        id: 304,
+        name: "Printer Enclosure",
+        slug: "printer-enclosure",
+        image: null,
+        children: [],
+      },
+    ],
+  },
+  {
+    id: 4,
+    name: "Materials",
+    slug: "materials",
+    image: null,
+    children: [
+      {
+        id: 401,
+        name: "PLA Filaments",
+        slug: "pla-filaments",
+        image: null,
+        children: [],
+      },
+      {
+        id: 402,
+        name: "PETG Filaments",
+        slug: "petg-filaments",
+        image: null,
+        children: [],
+      },
+      {
+        id: 403,
+        name: "TPU Filaments",
+        slug: "tpu-filaments",
+        image: null,
+        children: [],
+      },
+      {
+        id: 404,
+        name: "ABS Filaments",
+        slug: "abs-filaments",
+        image: null,
+        children: [],
+      },
+      {
+        id: 405,
+        name: "Resin",
+        slug: "resin",
+        image: null,
+        children: [],
+      },
+    ],
+  },
+  {
+    id: 5,
+    name: "Washing & Curing",
+    slug: "washing-curing",
+    image: null,
+    children: [
+      {
+        id: 501,
+        name: "Washing & Curing Series",
+        slug: "washing-curing-series",
+        image: null,
+        children: [],
+      },
+    ],
+  },
+  {
+    id: 6,
+    name: "Laser & Milling",
+    slug: "laser-milling",
+    image: null,
+    children: [
+      {
+        id: 601,
+        name: "Laser & Milling Series",
+        slug: "laser-milling-series",
+        image: null,
+        children: [],
+      },
+    ],
+  },
+  {
+    id: 7,
+    name: "Spare Parts",
+    slug: "spare-parts",
+    image: null,
+    children: [],
+  },
+];
+
 export async function getCategoryTree(): Promise<CategoryNode[]> {
-    try {
-        const baseUrl = (process.env.WC_BASE_URL ?? "").replace(/\/$/, "");
-        const consumerKey = process.env.WC_CONSUMER_KEY ?? "";
-        const consumerSecret = process.env.WC_CONSUMER_SECRET ?? "";
-
-        if (!baseUrl || !consumerKey || !consumerSecret) {
-            console.warn("[MegaMenu] Missing WC credentials — returning empty tree");
-            return [];
-        }
-
-        const url = new URL(`${baseUrl}/wp-json/wc/v3/products/categories`);
-        url.searchParams.set("per_page", "100");
-        url.searchParams.set("hide_empty", "false");
-
-        const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64");
-
-        const response = await fetch(url.toString(), {
-            headers: {
-                Authorization: `Basic ${auth}`,
-                Accept: "application/json",
-            },
-            next: { revalidate: 3600 },
-        });
-
-        if (!response.ok) {
-            console.error(`[MegaMenu] Failed to fetch categories: ${response.status}`);
-            return [];
-        }
-
-        const raw: WCCategory[] = await response.json();
-        return buildTree(raw);
-    } catch (error) {
-        console.error("[MegaMenu] Error fetching category tree:", error);
-        return [];
-    }
-}
-
-/** Decode common HTML entities returned by WooCommerce (e.g. &amp; → &) */
-function decodeHtmlEntities(text: string): string {
-    return text
-        .replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&quot;/g, '"')
-        .replace(/&#039;/g, "'")
-        .replace(/&#8211;/g, "–")
-        .replace(/&#8212;/g, "—");
-}
-
-function buildTree(categories: WCCategory[]): CategoryNode[] {
-    // Filter out "Uncategorized" (WC default, id 15 commonly or name match)
-    const filtered = categories.filter(
-        (c) => c.slug !== "uncategorized" && c.name.toLowerCase() !== "uncategorized"
-    );
-
-    const nodeMap = new Map<number, CategoryNode>();
-
-    // Create nodes
-    for (const cat of filtered) {
-        nodeMap.set(cat.id, {
-            id: cat.id,
-            name: decodeHtmlEntities(cat.name),
-            slug: cat.slug,
-            image: cat.image?.src ?? null,
-            children: [],
-        });
-    }
-
-    const roots: CategoryNode[] = [];
-
-    // Build parent-child relationships
-    for (const cat of filtered) {
-        const node = nodeMap.get(cat.id);
-        if (!node) continue;
-
-        if (cat.parent === 0 || !nodeMap.has(cat.parent)) {
-            roots.push(node);
-        } else {
-            const parent = nodeMap.get(cat.parent);
-            parent?.children.push(node);
-        }
-    }
-
-    // Sort alphabetically: parents first, then children
-    roots.sort((a, b) => a.name.localeCompare(b.name));
-    for (const root of roots) {
-        root.children.sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    return roots;
+  return DEMO_CATEGORY_TREE;
 }
