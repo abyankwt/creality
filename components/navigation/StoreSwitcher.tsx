@@ -18,8 +18,8 @@ const OPTIONS: StoreOption[] = [
     description: "Hardware, materials, and parts",
   },
   {
-    label: "Printing Service",
-    href: "/printing-service",
+    label: "Printing Services",
+    href: "/printing-services",
     description: "Custom jobs and enterprise support",
   },
 ];
@@ -28,7 +28,11 @@ export default function StoreSwitcher() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const currentLabel = pathname === "/printing-service" ? "Printing Service" : "Store";
+  const currentLabel =
+    pathname.startsWith("/printing-service") ||
+    pathname.startsWith("/printing-services")
+      ? "Printing Services"
+      : "Store";
 
   useEffect(() => {
     const handler = (event: MouseEvent) => {

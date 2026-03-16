@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import CrealityCloudCard from "@/components/CrealityCloudCard";
 import { SOCIAL_LINKS, SocialLink } from "@/config/social-links";
 import { ChevronDown, Instagram, Facebook, Twitter, Youtube, MessageCircle, Video } from "lucide-react";
 
@@ -150,6 +151,11 @@ export default function Footer() {
               {footerLinks.map((group) => (
                 <AccordionSection key={group.title} group={group} />
               ))}
+            </div>
+
+            <div className="mt-6 space-y-3">
+              <p className="text-sm font-semibold text-gray-900">Platforms</p>
+              <CrealityCloudCard />
             </div>
           </div>
         </div>

@@ -8,6 +8,7 @@ import type {
   ProductMeta,
   ProductPrices,
 } from "@/lib/woocommerce-types";
+import { resolveProductOrderType } from "@/lib/productLogic";
 
 type SortOrder = "asc" | "desc";
 
@@ -61,6 +62,7 @@ type RawStoreProduct = {
   categories?: RawProductCategory[];
   tags?: RawProductTag[];
   meta_data?: ProductMeta[];
+  product_order_type?: Product["product_order_type"];
   is_in_stock?: boolean | null;
   stock_status?: string;
   stock_quantity?: number | null;
@@ -207,6 +209,8 @@ const normalizeProduct = (product: RawStoreProduct): Product => {
     categories: (product.categories ?? []).map(normalizeCategory),
     tags: product.tags ?? [],
     meta_data: product.meta_data ?? [],
+    product_order_type:
+      product.product_order_type ?? resolveProductOrderType(product),
     is_in_stock: product.is_in_stock ?? null,
     stock_status: product.stock_status ?? "outofstock",
     stock_quantity: product.stock_quantity ?? null,

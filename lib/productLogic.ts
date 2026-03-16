@@ -1,17 +1,19 @@
-import { isProductInStock, isSpecialOrder } from "@/lib/productStock";
-
-type ProductTagLike =
-  | string
-  | {
-    name?: string | null;
-    slug?: string | null;
-  };
+import type { ProductOrderType } from "@/lib/woocommerce-types";
 
 type ProductLike = {
+  product_order_type?: ProductOrderType | null;
   is_in_stock?: boolean | null;
-  tags?: ProductTagLike[] | null;
-  name?: string | null;
 };
+
+export function resolveProductOrderType(
+  product: ProductLike | null | undefined
+): ProductOrderType {
+  if (product?.product_order_type) {
+    return product.product_order_type;
+  }
+
+  return product?.is_in_stock === true ? "in_stock" : "special_order";
+}
 
 export type ProductAvailability = {
   type: "preorder" | "available" | "special";
@@ -19,47 +21,29 @@ export type ProductAvailability = {
   lead?: string;
 };
 
-function isPreorderTag(tag: ProductTagLike) {
-  if (typeof tag === "string") {
-    return tag.toLowerCase() === "preorder";
-  }
-
-  return [tag.name, tag.slug].some(
-    (value) => value?.toLowerCase().includes("preorder") ?? false
-  );
-}
-
 export function getProductAvailability(
   product: ProductLike | null | undefined
 ): ProductAvailability {
-  const isPreorder = product?.tags?.some(isPreorderTag);
+  const orderType = resolveProductOrderType(product);
 
-  if (isProductInStock(product)) {
+  if (orderType === "in_stock") {
     return {
       type: "available",
       label: "Add to Cart",
     };
   }
 
-  if (isPreorder) {
+  if (orderType === "pre_order") {
     return {
       type: "preorder",
       label: "Pre-Order",
-      lead: "Delivery: 30-45 days",
-    };
-  }
-
-  if (isSpecialOrder(product)) {
-    return {
-      type: "special",
-      label: "Special Order",
-      lead: "Delivery: 10-12 days",
+      lead: "Delivery: ~45 days",
     };
   }
 
   return {
     type: "special",
     label: "Special Order",
-    lead: "Delivery: 10-12 days",
+    lead: "Delivery: 1012 days",
   };
 }

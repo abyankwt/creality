@@ -6,13 +6,15 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AddToCartConfirmationModal from "@/components/AddToCartConfirmationModal";
 import OrderWarningModal from "@/components/OrderWarningModal";
+import ProductActionButton from "@/components/ProductActionButton";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/price";
-import { getProductAvailability } from "@/lib/productLogic";
+import { resolveProductOrderType } from "@/lib/productLogic";
 import type { Product } from "@/lib/woocommerce-types";
 
 type ProductCardProps = {
   product: Product;
+  product_order_type?: Product["product_order_type"];
   onAddToCart?: () => void;
 };
 
@@ -21,6 +23,7 @@ const fallbackImage =
 
 export default function ProductCard({
   product,
+  product_order_type,
   onAddToCart,
 }: ProductCardProps) {
   const router = useRouter();
@@ -32,24 +35,28 @@ export default function ProductCard({
   const [confirmationOpen, setConfirmationOpen] = useState(false);
 
   const resolvedImage = product.images?.[0]?.src || fallbackImage;
-  const availability = getProductAvailability(product);
-  const isAvailable = availability.type === "available";
-  const isPreorder = availability.type === "preorder";
-  const isSpecialOrder = availability.type === "special";
+  const productOrderType =
+    product_order_type ??
+    product.product_order_type ??
+    resolveProductOrderType(product);
+  const isAvailable = productOrderType === "in_stock";
+  const isSpecialOrder = productOrderType === "special_order";
   const canAddToCart = Boolean(product.id);
   const modalAvailability = {
-    type: availability.type,
-    label: availability.label,
-    badge: availability.label,
-    leadTime: availability.lead?.replace(/^Delivery:\s*/, "") ?? null,
+    type: "special" as const,
+    label: "Special Order",
+    badge: "Special Order",
+    leadTime: "10-12 days",
   };
 
   useEffect(() => {
-    console.log("Product stock debug", {
+    console.log("Woo product", {
       name: product.name,
+      stock_status: product.stock_status,
+      stock_quantity: product.stock_quantity,
       is_in_stock: product.is_in_stock,
     });
-  }, [product.is_in_stock, product.name]);
+  }, [product.is_in_stock, product.name, product.stock_quantity, product.stock_status]);
 
   const commitAddToCart = async () => {
     if (!product.id || !canAddToCart) {
@@ -70,19 +77,6 @@ export default function ProductCard({
     }
   };
 
-  const handlePrimaryAction = async () => {
-    if (loading) {
-      return;
-    }
-
-    if (availability.type === "available") {
-      await commitAddToCart();
-      return;
-    }
-
-    router.push(`/product/${product.slug}`);
-  };
-
   const handleSpecialOrderClick = () => {
     if (loading) {
       return;
@@ -91,27 +85,6 @@ export default function ProductCard({
     setWarningAccepted(false);
     setWarningOpen(true);
   };
-
-  const statusText = isAvailable
-    ? "In stock"
-    : isPreorder
-    ? "Pre-order"
-    : "Currently out of stock";
-  const deliveryText = isAvailable
-    ? "\u00A0"
-    : isPreorder
-    ? "Delivery 30-45 days"
-    : "Delivery 10-12 days";
-  const actionLabel = isAvailable
-    ? "Add to Cart"
-    : isPreorder
-    ? "Pre-Order"
-    : "Special Order";
-  const actionClassName = isAvailable
-    ? "btn-primary inline-flex min-h-10 w-full items-center justify-center rounded-lg bg-[#6BBE45] px-3 py-2 text-[13px] font-semibold text-white transition duration-150 hover:bg-[#5AA73C]"
-    : isPreorder
-    ? "btn-secondary inline-flex min-h-10 w-full items-center justify-center rounded-lg bg-[#2563eb] px-3 py-2 text-[13px] font-semibold text-white transition duration-150 hover:bg-[#1d4ed8]"
-    : "btn-special inline-flex min-h-10 w-full items-center justify-center rounded-lg bg-[#f97316] px-3 py-2 text-[13px] font-semibold text-white transition duration-150 hover:bg-[#ea580c]";
 
   return (
     <>
@@ -149,28 +122,14 @@ export default function ProductCard({
           </div>
 
           <div className="product-actions mt-3">
-            <p className="product-status text-[13px] text-[#6b7280]">
-              {statusText}
-            </p>
-
-            <button
-              type="button"
-              onClick={isSpecialOrder ? handleSpecialOrderClick : handlePrimaryAction}
-              aria-label={`${actionLabel} for ${product.name}`}
-              className={actionClassName}
-            >
-              {isAvailable
-                ? loading
-                  ? "Adding..."
-                  : addedFeedback
-                  ? "Added"
-                  : "Add to Cart"
-                : actionLabel}
-            </button>
-
-            <p className="product-delivery text-[12px] text-[#6b7280]">
-              {deliveryText}
-            </p>
+            <ProductActionButton
+              product_order_type={productOrderType}
+              productName={product.name}
+              loading={loading}
+              added={addedFeedback}
+              onAddToCart={commitAddToCart}
+              onSpecialOrder={handleSpecialOrderClick}
+            />
           </div>
         </div>
       </article>
@@ -184,11 +143,6 @@ export default function ProductCard({
         onClose={() => setWarningOpen(false)}
         onConfirm={async () => {
           setWarningOpen(false);
-          if (availability.type === "special") {
-            await commitAddToCart();
-            return;
-          }
-
           await commitAddToCart();
         }}
         confirmLabel="Add to cart"

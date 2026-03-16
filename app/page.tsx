@@ -5,6 +5,7 @@ import ProductCard from "@/components/ProductCard";
 import ProductGrid from "@/components/ProductGrid";
 import FilterBar from "@/components/store/FilterBar";
 import { fetchProducts, fetchHeroImages } from "@/lib/api";
+import { mockPreOrders } from "@/lib/mockPreOrders";
 import CampaignHero from "@/components/CampaignHero";
 import { CAMPAIGN_SLIDES } from "@/config/campaigns";
 
@@ -112,6 +113,32 @@ export default async function HomePage({ searchParams }: PageProps) {
             >
               View all new
             </Link>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white py-12 sm:py-16">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="mb-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-gray-400">
+              Special Features
+            </p>
+            <h2 className="mt-2 text-xl font-semibold text-gray-900 sm:text-2xl">
+              Pre-Order
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Manager demo section for upcoming releases. These items do not appear in the main catalog.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {mockPreOrders.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                product_order_type="pre_order"
+              />
+            ))}
           </div>
         </div>
       </section>

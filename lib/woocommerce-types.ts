@@ -49,6 +49,8 @@ export type ProductMeta = {
   value: string;
 };
 
+export type ProductOrderType = "pre_order" | "special_order" | "in_stock";
+
 export interface Product {
   id: number;
   name: string;
@@ -70,6 +72,7 @@ export interface Product {
   categories: ProductCategory[];
   tags: ProductTag[];
   meta_data?: ProductMeta[];
+  product_order_type: ProductOrderType;
   is_in_stock?: boolean | null;
   stock_status: string;
   stock_quantity?: number | null;
