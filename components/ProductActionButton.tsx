@@ -10,10 +10,11 @@ type ProductActionButtonProps = {
   added?: boolean;
   onAddToCart?: () => void | Promise<void>;
   onSpecialOrder?: () => void;
+  onPreOrder?: () => void;
 };
 
 const PRE_ORDER_BLOCK_MESSAGE =
-  "This is a pre-order item. Click 'Pre-Order' in the dedicated section (homepage) to reserve it. Shipping is $0 and it ships in ~45 days.";
+  "This is a pre-order item. Visit /pre-orders to reserve it.";
 
 const BUTTON_STYLES: Record<ProductOrderType, string> = {
   in_stock:
@@ -32,8 +33,8 @@ const BUTTON_LABELS: Record<ProductOrderType, string> = {
 
 const SHIPPING_MESSAGES: Record<ProductOrderType, string> = {
   in_stock: "In stock",
-  special_order: "Ships in 1012 days  Shipping fee applies",
-  pre_order: "Ships in ~45 days  $0 shipping",
+  special_order: "Delivery 10-12 days",
+  pre_order: "Ships in ~45 days",
 };
 
 export default function ProductActionButton({
@@ -43,6 +44,7 @@ export default function ProductActionButton({
   added = false,
   onAddToCart,
   onSpecialOrder,
+  onPreOrder,
 }: ProductActionButtonProps) {
   const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
 
@@ -64,6 +66,11 @@ export default function ProductActionButton({
 
     if (product_order_type === "special_order") {
       onSpecialOrder?.();
+      return;
+    }
+
+    if (onPreOrder) {
+      onPreOrder();
       return;
     }
 

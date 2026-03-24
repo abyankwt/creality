@@ -7,6 +7,7 @@ import AddToCartConfirmationModal from "@/components/AddToCartConfirmationModal"
 import AvailabilityBadge from "@/components/AvailabilityBadge";
 import OrderWarningModal from "@/components/OrderWarningModal";
 import ProductCard from "@/components/ProductCard";
+import ProductGridSkeleton from "@/components/ProductGridSkeleton";
 import SmartImage from "@/components/SmartImage";
 import { useCart } from "@/context/CartContext";
 import { formatPrice, getProductPriceInfo } from "@/lib/price";
@@ -123,7 +124,10 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     type: availability.type,
     label: availability.label,
     badge: availability.label,
-    leadTime: availability.lead?.replace(/^Delivery:\s*/, "") ?? null,
+    leadTime:
+      product.lead_time ??
+      availability.lead?.replace(/^Delivery:\s*/, "") ??
+      null,
   };
   const videoUrl = extractVideoUrl(product.meta_data);
   const embedUrl = getEmbedUrl(videoUrl);
@@ -221,6 +225,13 @@ export default function ProductDetail({ product }: ProductDetailProps) {
       setAdding(true);
       await addItem(product.id, itemQuantity);
       await refreshCart();
+      setToast({
+        message:
+          availability.type === "preorder"
+            ? "Pre-order item added to cart."
+            : "Added to cart.",
+        type: "success",
+      });
       setConfirmationOpen(true);
     } catch {
       setToast({ message: "Unable to add to cart.", type: "error" });
@@ -568,9 +579,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
             <h2 className="text-lg font-semibold text-gray-900">Related products</h2>
           </div>
           {relatedLoading ? (
-            <div className="rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
-              Loading related products...
-            </div>
+            <ProductGridSkeleton count={4} />
           ) : relatedProducts.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
               No related products available.
@@ -625,7 +634,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 : "bg-[#2563eb] hover:bg-[#1d4ed8]"
             } disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400`}
           >
-            {adding ? "..." : availability.label}
+            {adding ? "Adding..." : availability.label}
           </button>
         </div>
       </div>

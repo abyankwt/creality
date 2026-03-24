@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import RouteProgressBar from "@/components/RouteProgressBar";
 
 // Lazy-load floating client-only UI — must be in a Client Component
 // because `ssr: false` is only allowed in Client Components in App Router
@@ -19,6 +20,7 @@ const SupportChatbot = dynamic(() => import("@/components/SupportChatbot"), {
 export default function GlobalClientUI() {
     return (
         <>
+            <RouteProgressBar />
             <CompareBar />
             <PromoPopup />
             <SupportChatbot />

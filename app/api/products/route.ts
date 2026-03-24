@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fetchCatalogProducts } from "@/lib/catalog";
 import { fetchProducts } from "@/lib/woocommerce";
+import type { ProductOrderType } from "@/lib/woocommerce-types";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,17 +13,36 @@ export async function GET(request: NextRequest) {
     const orderby = searchParams.get("orderby") ?? undefined;
     const order = (searchParams.get("order") as "asc" | "desc" | null) ?? undefined;
     const category = searchParams.get("category");
+    const categorySlug = searchParams.get("category_slug") ?? undefined;
+    const productOrderType = searchParams.get("product_order_type");
+    const sort = searchParams.get("sort") ?? undefined;
+    const tag = searchParams.get("tag") ?? searchParams.get("promotion") ?? undefined;
     const exclude = searchParams.get("exclude");
 
-    const result = await fetchProducts({
-      page,
-      perPage,
-      search,
-      stock_status,
-      orderby,
-      order: order ?? undefined,
-      category: category ? Number(category) : undefined,
-    });
+    const result =
+      search || category || orderby || order
+        ? await fetchProducts({
+            page,
+            perPage,
+            search,
+            stock_status,
+            orderby,
+            order: order ?? undefined,
+            category: category ? Number(category) : undefined,
+            tag,
+          })
+        : await fetchCatalogProducts({
+            page,
+            perPage,
+            categorySlug,
+            orderType:
+              productOrderType === "pre_order"
+                ? (productOrderType as ProductOrderType)
+                : undefined,
+            sort,
+            stockStatus: stock_status,
+            tag,
+          });
 
     const excludedId = exclude ? Number(exclude) : undefined;
     const products = Number.isFinite(excludedId)

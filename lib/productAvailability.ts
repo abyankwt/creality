@@ -1,4 +1,8 @@
-import { isProductInStock, isSpecialOrder } from "@/lib/productStock";
+import {
+  isPreOrderProduct,
+  resolveProductLeadTime,
+  resolveProductOrderType,
+} from "@/lib/productLogic";
 
 export type ProductOrderingType =
   | "available"
@@ -16,18 +20,32 @@ export type ProductAvailability = {
 export function getProductAvailability(
   product:
     | {
+        product_order_type?: "pre_order" | "special_order" | "in_stock" | null;
+        order_type?: "pre_order" | "special_order" | "in_stock" | null;
+        is_preorder?: boolean | null;
         is_in_stock?: boolean | null;
+        stock_status?: string | null;
+        lead_time?: string | null;
+        category_slug?: string[] | null;
+        categories?: Array<{ slug: string; name: string }> | null;
         tags?: Array<{ name: string; slug: string }>;
+        meta_data?: Array<{ key: string; value: string }>;
       }
     | null
     | undefined
 ): ProductAvailability {
-  const isPreorder = (product?.tags ?? []).some((tag) =>
-    tag.name.toLowerCase().includes("preorder") ||
-    tag.slug.toLowerCase().includes("preorder")
-  );
+  const orderType = resolveProductOrderType(product);
 
-  if (isProductInStock(product)) {
+  if (orderType === "pre_order" || isPreOrderProduct(product)) {
+    return {
+      type: "preorder",
+      label: "Pre-order",
+      badge: "Pre-order",
+      leadTime: resolveProductLeadTime(product),
+    };
+  }
+
+  if (orderType === "in_stock") {
     return {
       type: "available",
       label: "Buy Now",
@@ -36,16 +54,7 @@ export function getProductAvailability(
     };
   }
 
-  if (isPreorder) {
-    return {
-      type: "preorder",
-      label: "Pre-order",
-      badge: "Pre-order",
-      leadTime: "30-45 days",
-    };
-  }
-
-  if (isSpecialOrder(product)) {
+  if (orderType === "special_order") {
     return {
       type: "special",
       label: "Special Order",

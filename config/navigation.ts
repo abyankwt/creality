@@ -40,7 +40,7 @@ const PRE_ORDERS_ITEM: NavigationItem = {
   id: "pre-orders",
   kind: "link",
   label: "Pre-orders",
-  href: `/#${PRE_ORDERS_SECTION_ID}`,
+  href: "/pre-orders",
 };
 
 const STATIC_NAV_ITEMS: NavigationItem[] = [
@@ -95,9 +95,11 @@ export const PROMOTIONAL_NAV_ITEMS: PromotionMenuItem[] = [
 ];
 
 export const ALL_PRODUCTS_CATEGORY_LINKS: NavigationLink[] = [
+  { label: "K Series", href: "/category/k-series" },
+  { label: "PLA Filaments", href: "/category/pla-filaments" },
+  { label: "Accessories", href: "/category/accessories" },
   { label: "3D Printers", href: "/category/3d-printers" },
   { label: "3D Scanners", href: "/category/3d-scanners" },
-  { label: "Accessories", href: "/category/accessories" },
   { label: "Materials", href: "/category/materials" },
   { label: "Washing and Curing", href: "/category/washing-curing" },
   { label: "Laser Milling Machines", href: "/category/laser-milling" },

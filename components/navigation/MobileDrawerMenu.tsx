@@ -1,21 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import type { MouseEvent as ReactMouseEvent } from "react";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import {
   ACCOUNT_NAV_LINKS,
-  ALL_PRODUCTS_CATEGORY_LINKS,
-  PRE_ORDERS_SECTION_ID,
   type NavigationItem,
   type NavigationLink,
 } from "@/config/navigation";
-import { scrollToSectionById } from "@/lib/scrollToSection";
+import { buildCategoryGroups } from "@/lib/categoryGroups";
+import type { CategoryNode } from "@/lib/categories";
 
 type MobileDrawerMenuProps = {
   navigation: NavigationItem[];
+  categories: CategoryNode[];
   onNavigate?: () => void;
 };
 
@@ -27,13 +25,11 @@ function DrawerRow({
   section,
   expanded,
   onChildNavigate,
-  onLinkClick,
   onToggle,
 }: {
   section: DrawerSection;
   expanded: boolean;
   onChildNavigate?: () => void;
-  onLinkClick: (event: ReactMouseEvent<HTMLAnchorElement>) => void;
   onToggle: () => void;
 }) {
   const hasChildren = Boolean(section.children?.length);
@@ -44,10 +40,20 @@ function DrawerRow({
       <div className="flex items-center justify-between gap-4 py-4">
         <Link
           href={section.href}
-          className="min-w-0 flex-1 text-sm font-medium text-gray-900"
-          onClick={onLinkClick}
+          prefetch
+          className={`min-w-0 flex-1 text-sm font-medium ${
+            section.id === "pre-orders" ? "text-[#2f5d1d]" : "text-gray-900"
+          }`}
+          onClick={onChildNavigate}
         >
-          {section.label}
+          <span className="flex items-center gap-2">
+            <span>{section.label}</span>
+            {section.id === "pre-orders" && (
+              <span className="rounded-full bg-[#6BBE45] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white">
+                New
+              </span>
+            )}
+          </span>
         </Link>
         {hasChildren && (
           <button
@@ -60,18 +66,24 @@ function DrawerRow({
           >
             <ChevronDown
               size={18}
-              className={`transition-transform ${expanded ? "rotate-180" : "rotate-0"}`}
+              className={`transition-transform duration-300 ${
+                expanded ? "rotate-180" : "rotate-0"
+              }`}
               aria-hidden="true"
             />
           </button>
         )}
       </div>
       {hasChildren && expanded && (
-        <div id={panelId} className="flex flex-col gap-2 pb-3 pl-4 text-gray-600">
+        <div
+          id={panelId}
+          className="flex flex-col gap-2 pb-3 pl-4 text-gray-600 transition-all duration-300"
+        >
           {section.children?.map((child) => (
             <Link
               key={`${section.id}-${child.href}-${child.label}`}
               href={child.href}
+              prefetch
               className="text-sm transition hover:text-gray-900"
               onClick={onChildNavigate}
             >
@@ -84,21 +96,108 @@ function DrawerRow({
   );
 }
 
+function CategoryAccordion({
+  groups,
+  onNavigate,
+}: {
+  groups: ReturnType<typeof buildCategoryGroups>;
+  onNavigate?: () => void;
+}) {
+  const [openGroupId, setOpenGroupId] = useState<string | null>(
+    groups[0]?.id ?? null
+  );
+
+  return (
+    <div className="space-y-3 pb-3 pl-4">
+      {groups.map((group) => {
+        const expanded = openGroupId === group.id;
+        const contentId = `mobile-category-group-${group.id}`;
+
+        return (
+          <div
+            key={group.id}
+            className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50"
+          >
+            <button
+              type="button"
+              onClick={() =>
+                setOpenGroupId((current) => (current === group.id ? null : group.id))
+              }
+              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+              aria-expanded={expanded}
+              aria-controls={contentId}
+            >
+              <span className="text-sm font-semibold text-gray-900">
+                {group.label}
+              </span>
+              <ChevronDown
+                className={`h-4 w-4 text-gray-400 transition-transform duration-300 ${
+                  expanded ? "rotate-180" : "rotate-0"
+                }`}
+                aria-hidden="true"
+              />
+            </button>
+
+            <div
+              id={contentId}
+              className={`grid transition-all duration-300 ${
+                expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div className="space-y-4 border-t border-gray-200 px-4 py-3">
+                  {group.categories.map((category) => (
+                    <div key={category.id}>
+                      <Link
+                        href={`/category/${category.slug}`}
+                        prefetch
+                        className="text-sm font-semibold text-gray-900 transition hover:text-black"
+                        onClick={onNavigate}
+                      >
+                        {category.name}
+                      </Link>
+
+                      <div className="mt-2 flex flex-col gap-2 pl-4">
+                        <Link
+                          href={`/category/${category.slug}`}
+                          prefetch
+                          className="text-sm text-gray-600 transition hover:text-black"
+                          onClick={onNavigate}
+                        >
+                          All {category.name}
+                        </Link>
+                        {category.children.map((child) => (
+                          <Link
+                            key={child.id}
+                            href={`/category/${child.slug}`}
+                            prefetch
+                            className="text-sm text-gray-600 transition hover:text-black"
+                            onClick={onNavigate}
+                          >
+                            {child.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function MobileDrawerMenu({
   navigation,
+  categories,
   onNavigate,
 }: MobileDrawerMenuProps) {
   const [openSection, setOpenSection] = useState<string | null>(null);
-  const pathname = usePathname();
 
   const sections = navigation.map<DrawerSection>((item) => {
-    if (item.kind === "mega") {
-      return {
-        ...item,
-        children: ALL_PRODUCTS_CATEGORY_LINKS,
-      };
-    }
-
     if (item.kind === "account") {
       return {
         ...item,
@@ -109,42 +208,81 @@ export default function MobileDrawerMenu({
     return item;
   });
 
+  const visibleCategories = categories.filter(
+    (category) => category.children.length > 0 || categories.length <= 8
+  );
+  const categoryGroups = buildCategoryGroups(visibleCategories);
+
   const toggleSection = (sectionId: string) => {
     setOpenSection((current) => (current === sectionId ? null : sectionId));
   };
 
-  const handleSectionClick =
-    (section: DrawerSection) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
-      if (section.id !== "pre-orders" || pathname !== "/") {
-        onNavigate?.();
-        return;
-      }
-
-      event.preventDefault();
-
-      const didScroll = scrollToSectionById(PRE_ORDERS_SECTION_ID);
-
-      if (didScroll) {
-        onNavigate?.();
-        return;
-      }
-
-      window.location.assign(section.href);
-    };
-
   return (
     <div className="flex flex-col">
       <div>
-        {sections.map((section) => (
-          <DrawerRow
-            key={section.id}
-            section={section}
-            expanded={openSection === section.id}
-            onChildNavigate={onNavigate}
-            onLinkClick={handleSectionClick(section)}
-            onToggle={() => toggleSection(section.id)}
-          />
-        ))}
+        {sections.map((section) => {
+          const expanded = openSection === section.id;
+
+          if (section.kind === "mega") {
+            return (
+              <div
+                key={section.id}
+                className="border-b border-gray-100 transition hover:bg-gray-50"
+              >
+                <div className="flex items-center justify-between gap-4 py-4">
+                  <Link
+                    href={section.href}
+                    prefetch
+                    className="min-w-0 flex-1 text-sm font-medium text-gray-900"
+                    onClick={onNavigate}
+                  >
+                    {section.label}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => toggleSection(section.id)}
+                    className="rounded-md p-1 text-gray-400 transition hover:text-gray-900"
+                    aria-expanded={expanded}
+                    aria-controls={`${section.id}-submenu`}
+                    aria-label={`${expanded ? "Collapse" : "Expand"} ${section.label}`}
+                  >
+                    <ChevronDown
+                      size={18}
+                      className={`transition-transform duration-300 ${
+                        expanded ? "rotate-180" : "rotate-0"
+                      }`}
+                      aria-hidden="true"
+                    />
+                  </button>
+                </div>
+
+                <div
+                  id={`${section.id}-submenu`}
+                  className={`grid transition-all duration-300 ${
+                    expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <CategoryAccordion
+                      groups={categoryGroups}
+                      onNavigate={onNavigate}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <DrawerRow
+              key={section.id}
+              section={section}
+              expanded={expanded}
+              onChildNavigate={onNavigate}
+              onToggle={() => toggleSection(section.id)}
+            />
+          );
+        })}
       </div>
     </div>
   );

@@ -1,15 +1,22 @@
 "use client";
 
 import type { NavigationItem } from "@/config/navigation";
+import type { CategoryNode } from "@/lib/categories";
 import MobileDrawerMenu from "./MobileDrawerMenu";
 
 type MobileMenuProps = {
   open: boolean;
   onClose: () => void;
   navigation: NavigationItem[];
+  categories: CategoryNode[];
 };
 
-export default function MobileMenu({ open, onClose, navigation }: MobileMenuProps) {
+export default function MobileMenu({
+  open,
+  onClose,
+  navigation,
+  categories,
+}: MobileMenuProps) {
   if (!open) return null;
 
   return (
@@ -34,7 +41,11 @@ export default function MobileMenu({ open, onClose, navigation }: MobileMenuProp
       </div>
 
       <div className="h-[calc(100vh-65px)] overflow-y-auto px-5 pb-10 pt-5">
-        <MobileDrawerMenu navigation={navigation} onNavigate={onClose} />
+        <MobileDrawerMenu
+          navigation={navigation}
+          categories={categories}
+          onNavigate={onClose}
+        />
       </div>
     </div>
   );

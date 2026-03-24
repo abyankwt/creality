@@ -8,7 +8,11 @@ import type {
   ProductMeta,
   ProductPrices,
 } from "@/lib/woocommerce-types";
-import { resolveProductOrderType } from "@/lib/productLogic";
+import {
+  isPreOrderProduct,
+  resolveProductLeadTime,
+  resolveProductOrderType,
+} from "@/lib/productLogic";
 
 type SortOrder = "asc" | "desc";
 
@@ -62,6 +66,8 @@ type RawStoreProduct = {
   categories?: RawProductCategory[];
   tags?: RawProductTag[];
   meta_data?: ProductMeta[];
+  is_preorder?: boolean | null;
+  lead_time?: string | null;
   product_order_type?: Product["product_order_type"];
   is_in_stock?: boolean | null;
   stock_status?: string;
@@ -183,6 +189,12 @@ const normalizeProduct = (product: RawStoreProduct): Product => {
   const price = parseStorePrice(product.prices?.price, minorUnit);
   const regularPrice = parseStorePrice(product.prices?.regular_price, minorUnit);
   const salePrice = parseStorePrice(product.prices?.sale_price, minorUnit);
+  const normalizedCategories = (product.categories ?? []).map(normalizeCategory);
+  const resolvedOrderType =
+    product.product_order_type ?? resolveProductOrderType(product);
+  const isPreOrder = product.is_preorder ?? isPreOrderProduct(product);
+  const leadTime =
+    resolvedOrderType === "pre_order" ? resolveProductLeadTime(product) : null;
 
   return {
     id: product.id,
@@ -206,11 +218,14 @@ const normalizeProduct = (product: RawStoreProduct): Product => {
     currency_minor_unit: minorUnit,
     images: (product.images ?? []).map(normalizeImage),
     attributes: (product.attributes ?? []).map(normalizeAttribute),
-    categories: (product.categories ?? []).map(normalizeCategory),
+    category_slug: normalizedCategories.map((category) => category.slug),
+    categories: normalizedCategories,
     tags: product.tags ?? [],
+    is_preorder: Boolean(isPreOrder),
+    lead_time: leadTime,
+    order_type: resolvedOrderType,
     meta_data: product.meta_data ?? [],
-    product_order_type:
-      product.product_order_type ?? resolveProductOrderType(product),
+    product_order_type: resolvedOrderType,
     is_in_stock: product.is_in_stock ?? null,
     stock_status: product.stock_status ?? "outofstock",
     stock_quantity: product.stock_quantity ?? null,

@@ -62,6 +62,7 @@ export default function CategoryColumn({
       <div>
         <Link
           href={`/category/${category.slug}`}
+          prefetch
           className="mb-2 inline-block text-xs font-semibold uppercase tracking-wide text-gray-400"
           onClick={onNavigate}
         >
@@ -73,6 +74,7 @@ export default function CategoryColumn({
             <Link
               key={link.id}
               href={`/category/${link.slug}`}
+              prefetch
               className="flex items-center gap-2 rounded-md px-2 py-1 text-sm text-gray-700 transition duration-150 ease-out hover:translate-x-1 hover:bg-gray-50 hover:text-black"
               role="menuitem"
               onClick={onNavigate}
@@ -86,6 +88,7 @@ export default function CategoryColumn({
 
       <Link
         href={`/category/${category.slug}`}
+        prefetch
         className="flex items-center gap-2 rounded-md px-2 py-1 text-sm text-gray-700 transition duration-150 ease-out hover:translate-x-1 hover:bg-gray-50 hover:text-black"
         onClick={onNavigate}
       >

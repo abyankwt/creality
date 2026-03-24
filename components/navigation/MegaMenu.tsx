@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Boxes, Sparkles } from "lucide-react";
 import type { CategoryNode } from "@/lib/categories";
+import { buildCategoryGroups } from "@/lib/categoryGroups";
 import CategoryColumn from "./CategoryColumn";
 
 type MegaMenuProps = {
@@ -12,58 +13,6 @@ type MegaMenuProps = {
   href?: string;
   categories: CategoryNode[];
 };
-
-type CategoryGroup = {
-  id: string;
-  categories: CategoryNode[];
-};
-
-const GROUP_BLUEPRINT = [
-  {
-    id: "machines",
-    slugs: ["3d-printers", "3d-scanners", "laser-milling"],
-  },
-  {
-    id: "materials",
-    slugs: ["materials", "washing-curing"],
-  },
-  {
-    id: "essentials",
-    slugs: ["accessories", "spare-parts"],
-  },
-] as const;
-
-function buildCategoryGroups(categories: CategoryNode[]): CategoryGroup[] {
-  const categoryMap = new Map(categories.map((category) => [category.slug, category]));
-  const used = new Set<string>();
-
-  const groups: CategoryGroup[] = GROUP_BLUEPRINT.map((group) => {
-    const groupCategories = group.slugs
-      .map((slug) => {
-        const category = categoryMap.get(slug);
-        if (category) {
-          used.add(slug);
-        }
-        return category;
-      })
-      .filter((category): category is CategoryNode => Boolean(category));
-
-    return {
-      id: group.id,
-      categories: groupCategories,
-    };
-  }).filter((group) => group.categories.length > 0);
-
-  const remaining = categories.filter((category) => !used.has(category.slug));
-  if (remaining.length > 0) {
-    groups.push({
-      id: "more",
-      categories: remaining,
-    });
-  }
-
-  return groups.slice(0, 3);
-}
 
 export default function MegaMenu({
   label = "Products",
@@ -108,7 +57,7 @@ export default function MegaMenu({
     >
       <div className="flex items-center gap-1.5 text-sm font-medium">
         {href ? (
-          <Link href={href} className="transition hover:text-[#0b0b0b]">
+          <Link href={href} prefetch className="transition hover:text-[#0b0b0b]">
             {label}
           </Link>
         ) : (
@@ -170,6 +119,7 @@ export default function MegaMenu({
               </p>
               <Link
                 href="/store"
+                prefetch
                 onClick={() => setOpen(false)}
                 className="group block overflow-hidden rounded-xl bg-white shadow-sm transition duration-150 ease-out hover:-translate-y-0.5 hover:shadow-md"
               >

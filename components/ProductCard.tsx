@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AddToCartConfirmationModal from "@/components/AddToCartConfirmationModal";
 import OrderWarningModal from "@/components/OrderWarningModal";
 import ProductActionButton from "@/components/ProductActionButton";
@@ -15,7 +15,8 @@ import type { Product } from "@/lib/woocommerce-types";
 type ProductCardProps = {
   product: Product;
   product_order_type?: Product["product_order_type"];
-  onAddToCart?: () => void;
+  onAddToCart?: (message?: string) => void;
+  onAddToCartError?: (message?: string) => void;
 };
 
 const fallbackImage =
@@ -25,6 +26,7 @@ export default function ProductCard({
   product,
   product_order_type,
   onAddToCart,
+  onAddToCartError,
 }: ProductCardProps) {
   const router = useRouter();
   const { addItem } = useCart();
@@ -33,6 +35,9 @@ export default function ProductCard({
   const [warningOpen, setWarningOpen] = useState(false);
   const [warningAccepted, setWarningAccepted] = useState(false);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<"success" | "error">("success");
+  const toastTimerRef = useRef<number | null>(null);
 
   const resolvedImage = product.images?.[0]?.src || fallbackImage;
   const productOrderType =
@@ -41,13 +46,40 @@ export default function ProductCard({
     resolveProductOrderType(product);
   const isAvailable = productOrderType === "in_stock";
   const isSpecialOrder = productOrderType === "special_order";
+  const isPreOrder = productOrderType === "pre_order";
   const canAddToCart = Boolean(product.id);
-  const modalAvailability = {
-    type: "special" as const,
-    label: "Special Order",
-    badge: "Special Order",
-    leadTime: "10-12 days",
+  const successMessage =
+    productOrderType === "pre_order"
+      ? "Pre-order item added to cart"
+      : "Added to cart";
+
+  const showLocalToast = (
+    message: string,
+    type: "success" | "error" = "success"
+  ) => {
+    setToastType(type);
+    setToastMessage(message);
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+    toastTimerRef.current = window.setTimeout(() => {
+      setToastMessage(null);
+    }, 1600);
   };
+
+  const modalAvailability = isPreOrder
+    ? {
+        type: "preorder" as const,
+        label: "Pre-Order",
+        badge: "Pre-Order",
+        leadTime: product.lead_time ?? "~45 days",
+      }
+    : {
+        type: "special" as const,
+        label: "Special Order",
+        badge: "Special Order",
+        leadTime: "10-12 days",
+      };
 
   useEffect(() => {
     console.log("Woo product", {
@@ -57,6 +89,14 @@ export default function ProductCard({
       is_in_stock: product.is_in_stock,
     });
   }, [product.is_in_stock, product.name, product.stock_quantity, product.stock_status]);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   const commitAddToCart = async () => {
     if (!product.id || !canAddToCart) {
@@ -69,9 +109,21 @@ export default function ProductCard({
       await addItem(product.id, 1);
       setAddedFeedback(true);
       setConfirmationOpen(true);
+      if (onAddToCart) {
+        onAddToCart(successMessage);
+      } else {
+        showLocalToast(successMessage);
+      }
       window.setTimeout(() => setAddedFeedback(false), 2000);
     } catch (error) {
       console.error("Failed to add to cart:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unable to add item to cart.";
+      if (onAddToCartError) {
+        onAddToCartError(errorMessage);
+      } else {
+        showLocalToast(errorMessage, "error");
+      }
     } finally {
       setLoading(false);
     }
@@ -89,13 +141,14 @@ export default function ProductCard({
   return (
     <>
       <article className="product-card flex flex-col min-w-0 group relative h-full rounded-xl border border-gray-200 bg-white p-[10px] transition-all duration-200 hover:shadow-sm">
-        {isSpecialOrder && (
+        {(isSpecialOrder || isPreOrder) && (
           <div className="product-badge absolute left-2 top-2 z-10 rounded-full bg-[#e5e7eb] px-[10px] py-1 text-[12px] text-gray-700">
-            Special Order
+            {isPreOrder ? "Pre-Order" : "Special Order"}
           </div>
         )}
         <Link
           href={`/product/${product.slug}`}
+          prefetch
           className="block"
           aria-label={`View ${product.name}`}
         >
@@ -109,7 +162,7 @@ export default function ProductCard({
         </Link>
 
         <div className="product-content flex flex-1 flex-col pt-3">
-          <Link href={`/product/${product.slug}`} className="block">
+          <Link href={`/product/${product.slug}`} prefetch className="block">
             <h3 className="product-title min-h-[2.75rem] text-[14px] font-semibold leading-[1.3] text-text">
               {product.name}
             </h3>
@@ -129,6 +182,7 @@ export default function ProductCard({
               added={addedFeedback}
               onAddToCart={commitAddToCart}
               onSpecialOrder={handleSpecialOrderClick}
+              onPreOrder={handleSpecialOrderClick}
             />
           </div>
         </div>
@@ -155,6 +209,24 @@ export default function ProductCard({
         product={product}
         onClose={() => setConfirmationOpen(false)}
       />
+
+      {!onAddToCart && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`pointer-events-none fixed inset-x-0 bottom-5 z-50 flex justify-center px-4 transition duration-200 ${
+            toastMessage ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"
+          }`}
+        >
+          <div
+            className={`rounded-full px-4 py-2 text-xs font-semibold text-white shadow-lg ${
+              toastType === "success" ? "bg-black" : "bg-red-600"
+            }`}
+          >
+            {toastMessage}
+          </div>
+        </div>
+      )}
     </>
   );
 }

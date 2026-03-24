@@ -5,21 +5,31 @@ import { useRouter } from "next/navigation";
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
+  type FocusEvent,
   type FormEvent,
   type KeyboardEvent,
 } from "react";
+import { Search } from "lucide-react";
 import { searchProducts } from "@/lib/searchProducts";
 import type { Product } from "@/lib/woocommerce-types";
 
 export default function SearchBar() {
   const router = useRouter();
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
+    if (!expanded) {
+      setOpen(false);
+      return;
+    }
+
     const trimmed = query.trim();
     if (!trimmed) {
       setResults([]);
@@ -53,7 +63,19 @@ export default function SearchBar() {
       active = false;
       window.clearTimeout(timeoutId);
     };
-  }, [query]);
+  }, [expanded, query]);
+
+  useEffect(() => {
+    if (!expanded) {
+      return;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [expanded]);
 
   const hasResults = useMemo(() => results.length > 0, [results]);
 
@@ -73,34 +95,66 @@ export default function SearchBar() {
       handleSubmit();
     }
     if (event.key === "Escape") {
+      setExpanded(false);
       setOpen(false);
     }
   };
 
+  const handleBlurCapture = (event: FocusEvent<HTMLDivElement>) => {
+    const nextTarget = event.relatedTarget as Node | null;
+    if (nextTarget && event.currentTarget.contains(nextTarget)) {
+      return;
+    }
+
+    setExpanded(false);
+    setOpen(false);
+  };
+
   return (
-    <div className="relative w-full max-w-md">
-      <form onSubmit={handleSubmit} className="w-full">
+    <div
+      className="relative h-10 w-10 shrink-0"
+      onBlurCapture={handleBlurCapture}
+    >
+      <form
+        onSubmit={handleSubmit}
+        className={`absolute right-0 top-1/2 z-20 -translate-y-1/2 overflow-hidden transition-all duration-300 ${
+          expanded ? "w-[250px] opacity-100" : "w-0 opacity-0"
+        }`}
+      >
         <label htmlFor="search" className="sr-only">
           Search products
         </label>
         <input
+          ref={inputRef}
           id="search"
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => {
-            if (query.trim()) setOpen(true);
+            if (query.trim()) {
+              setOpen(true);
+            }
           }}
           placeholder="Search products"
-          className="h-11 w-full rounded-full border border-gray-200 bg-white px-5 text-sm text-text placeholder:text-gray-400 focus:border-black focus:outline-none"
+          className="h-10 w-[250px] rounded-full border border-gray-200 bg-white pl-4 pr-12 text-sm text-text placeholder:text-gray-400 focus:border-black focus:outline-none"
           aria-label="Search products"
           autoComplete="off"
+          tabIndex={expanded ? 0 : -1}
         />
       </form>
 
-      {open && (
-        <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
+      <button
+        type="button"
+        onClick={() => setExpanded(true)}
+        className="absolute right-0 top-1/2 z-30 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition-all duration-300 hover:border-gray-300 hover:text-[#0b0b0b]"
+        aria-label="Search products"
+      >
+        <Search className="h-4 w-4" />
+      </button>
+
+      {expanded && open && (
+        <div className="absolute right-0 top-[calc(100%+0.5rem)] z-40 w-[320px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
           {loading ? (
             <div className="px-4 py-3 text-sm text-gray-500">Searching...</div>
           ) : hasResults ? (
@@ -109,6 +163,7 @@ export default function SearchBar() {
                 <Link
                   key={product.id}
                   href={`/product/${product.slug}`}
+                  prefetch
                   onClick={() => setOpen(false)}
                   className="flex items-center justify-between gap-3 px-4 py-3 text-sm transition hover:bg-gray-50"
                 >

@@ -1,25 +1,11 @@
-import Link from "next/link";
-import CategorySort from "@/components/CategorySort";
-import ProductCard from "@/components/ProductCard";
-import { fetchProductsByCategory, type WCProduct } from "@/lib/api";
-
-const getCategoryName = (products: WCProduct[], slug: string) => {
-  const match = products
-    .flatMap((product) => product.categories)
-    .find((category) => category.slug === slug);
-  return match?.name ?? slug.replace(/-/g, " ");
-};
-
-const sortProducts = (products: WCProduct[], sort: string) => {
-  const sorted = [...products];
-  if (sort === "price-asc") {
-    sorted.sort((a, b) => Number(a.price) - Number(b.price));
-  }
-  if (sort === "price-desc") {
-    sorted.sort((a, b) => Number(b.price) - Number(a.price));
-  }
-  return sorted;
-};
+import CatalogPage from "@/components/CatalogPage";
+import {
+  buildCatalogApiQuery,
+  fetchCatalogProducts,
+  getCatalogParam,
+  slugToTitle,
+  type RawCatalogSearchParams,
+} from "@/lib/catalog";
 
 export async function generateMetadata({
   params,
@@ -28,7 +14,7 @@ export async function generateMetadata({
 }) {
   const { slug } = await params;
   return {
-    title: slug.replace("-", " "),
+    title: slugToTitle(slug),
   };
 }
 
@@ -37,86 +23,32 @@ export default async function CategoryPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ sort?: string; page?: string }>;
+  searchParams: Promise<RawCatalogSearchParams>;
 }) {
   const { slug } = await params;
-  const { sort, page } = await searchParams;
-  const resolvedSort = sort ?? "price-asc";
-  const resolvedPage = Math.max(1, Number(page ?? 1));
-  const { data: products, totalPages } = await fetchProductsByCategory(slug, resolvedPage);
-  const categoryName = getCategoryName(products, slug);
-
-  // Sorting could be done via API if supported, or client side on the current page
-  const sortedProducts = sortProducts(products, resolvedSort);
-
-
+  const resolvedSearchParams = await searchParams;
+  const sort = getCatalogParam(resolvedSearchParams, "sort");
+  const stock =
+    getCatalogParam(resolvedSearchParams, "stock") ??
+    getCatalogParam(resolvedSearchParams, "stock_status");
+  const title = slugToTitle(slug);
+  const { data: products, totalPages } = await fetchCatalogProducts({
+    categorySlug: slug,
+    sort,
+    stockStatus: stock,
+  });
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-6 py-12 sm:py-16">
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-gray-400">
-            Category
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold text-text sm:text-4xl">
-            {categoryName}
-          </h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <label htmlFor="sort" className="text-sm text-gray-500">
-            Sort by
-          </label>
-          <form>
-            <CategorySort currentSort={resolvedSort} />
-          </form>
-        </div>
-      </div>
-
-      {sortedProducts.length === 0 ? (
-        <div className="mt-12 rounded-3xl border border-dashed border-border bg-white p-12 text-center text-sm text-gray-500">
-          No products found in this category.
-        </div>
-      ) : (
-        <div className="mt-10 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {sortedProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      )}
-
-      {totalPages > 1 && (
-        <div className="mt-12 flex items-center justify-between text-sm text-gray-500">
-          <Link
-            href={{
-              pathname: `/category/${slug}`,
-              query: {
-                sort: resolvedSort,
-                page: Math.max(1, resolvedPage - 1),
-              },
-            }}
-            className={`rounded-2xl border border-gray-200 px-4 py-2 transition hover:text-text ${resolvedPage === 1 ? "pointer-events-none opacity-50" : ""
-              }`}
-          >
-            Previous
-          </Link>
-          <span>
-            Page {resolvedPage} of {totalPages}
-          </span>
-          <Link
-            href={{
-              pathname: `/category/${slug}`,
-              query: {
-                sort: resolvedSort,
-                page: Math.min(totalPages, resolvedPage + 1),
-              },
-            }}
-            className={`rounded-2xl border border-gray-200 px-4 py-2 transition hover:text-text ${resolvedPage === totalPages ? "pointer-events-none opacity-50" : ""
-              }`}
-          >
-            Next
-          </Link>
-        </div>
-      )}
-    </div>
+    <CatalogPage
+      title={title}
+      products={products}
+      totalPages={totalPages}
+      apiQuery={buildCatalogApiQuery({
+        categorySlug: slug,
+        sort,
+        stockStatus: stock,
+      })}
+      emptyMessage={`No products found in ${title}.`}
+    />
   );
 }

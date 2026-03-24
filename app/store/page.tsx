@@ -1,77 +1,45 @@
-import { Suspense } from "react";
-import PromoModal from "./promo-modal";
-import Hero from "@/components/store/Hero";
-import CategoryIconGrid from "@/components/CategoryIconGrid";
-import FeaturedProducts from "@/components/store/FeaturedProducts";
-import FilterBar from "@/components/store/FilterBar";
-import { fetchProductsByCategory } from "@/lib/api";
-import type { Product as StoreProduct } from "@/lib/woocommerce-types";
-
-type RawParams = Record<string, string | string[] | undefined>;
+import CatalogPage from "@/components/CatalogPage";
+import {
+  buildCatalogApiQuery,
+  fetchCatalogProducts,
+  getCatalogParam,
+  slugToTitle,
+  type RawCatalogSearchParams,
+} from "@/lib/catalog";
 
 type PageProps = {
-  searchParams?: Promise<RawParams>;
+  searchParams?: Promise<RawCatalogSearchParams>;
 };
 
-/** Map sort shorthand (from URL) → WC orderby + order */
-function resolveSort(sort?: string): { orderby: string; order: "asc" | "desc" } {
-  switch (sort) {
-    case "price_asc": return { orderby: "price", order: "asc" };
-    case "price_desc": return { orderby: "price", order: "desc" };
-    case "date_desc": return { orderby: "date", order: "desc" };
-    default: return { orderby: "popularity", order: "desc" };
-  }
-}
-
-function getString(params: RawParams, key: string): string | undefined {
-  const val = params[key];
-  return typeof val === "string" ? val : undefined;
-}
-
-function slugToTitle(slug: string): string {
-  return slug.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
-}
-
 export default async function StorePage({ searchParams }: PageProps) {
-  const params: RawParams = await (searchParams ?? Promise.resolve({}));
-
-  const sort = getString(params, "sort");
-  const stock = getString(params, "stock");
-  const series = getString(params, "series");
-
-  const { orderby, order } = resolveSort(sort);
-
-  const { data: raw, totalProducts } = await fetchProductsByCategory(
-    "3d-printers",
-    1,
-    {
-      orderby,
-      order,
-      stock_status: stock || undefined,
-      seriesSlug: series || undefined,
-    }
-  );
-
-  // Cast to the client card type — WCProduct is a superset
-  const featured = raw.slice(0, 8) as unknown as StoreProduct[];
+  const params = await (searchParams ?? Promise.resolve({}));
+  const sort = getCatalogParam(params, "sort");
+  const stock =
+    getCatalogParam(params, "stock") ??
+    getCatalogParam(params, "stock_status");
+  const promotion = getCatalogParam(params, "promotion");
+  const { data: products, totalPages } = await fetchCatalogProducts({
+    sort,
+    stockStatus: stock,
+    tag: promotion,
+  });
+  const title = promotion ? slugToTitle(promotion) : "Shop All Products";
 
   return (
-    <div className="bg-white">
-      <PromoModal />
-      <Hero />
-      <CategoryIconGrid />
-
-      {/* FilterBar needs Suspense because it uses useSearchParams (client) */}
-      <div className="relative mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-        <Suspense fallback={null}>
-          <FilterBar totalCount={totalProducts} />
-        </Suspense>
-      </div>
-
-      <FeaturedProducts
-        products={featured}
-        title={series ? slugToTitle(series) : "Featured printers"}
-      />
-    </div>
+    <CatalogPage
+      title={title}
+      products={products}
+      totalPages={totalPages}
+      apiQuery={buildCatalogApiQuery({
+        sort,
+        stockStatus: stock,
+        tag: promotion,
+      })}
+      emptyMessage={
+        promotion
+          ? `No products found for ${slugToTitle(promotion)}.`
+          : "No products found."
+      }
+    />
   );
 }

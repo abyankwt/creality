@@ -2,16 +2,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import type { MouseEvent as ReactMouseEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, ShoppingBag, User } from "lucide-react";
-import {
-  PRE_ORDERS_SECTION_ID,
-  type NavigationItem,
-} from "@/config/navigation";
+import { type NavigationItem } from "@/config/navigation";
 import { useCart } from "@/context/CartContext";
-import { scrollToSectionById } from "@/lib/scrollToSection";
 import type { UserSession } from "@/lib/types";
 import type { CategoryNode } from "@/lib/categories";
 import MobileStoreSwitcher from "@/components/MobileStoreSwitcher";
@@ -110,37 +105,25 @@ export default function Navbar({ categories = [], navigation }: NavbarProps) {
     return pathname === item.href || pathname.startsWith(`${item.href}/`);
   };
 
+  const navItemBaseClass =
+    "relative inline-flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-3 text-sm font-medium transition";
+
   const navLinkClass = (item: NavigationItem) =>
-    `relative text-sm font-medium transition hover:text-[#0b0b0b] ${
+    `${navItemBaseClass} ${
       isActiveLink(item)
-        ? "text-[#0b0b0b] after:absolute after:-bottom-2 after:left-0 after:h-[2px] after:w-full after:bg-[#7bbf6a]"
+        ? "bg-gray-100 text-[#0b0b0b]"
         : item.kind === "promotion"
-          ? "text-[#7bbf6a]"
-          : "text-gray-600"
+          ? "text-[#7bbf6a] hover:bg-[#f4faef]"
+          : "text-gray-600 hover:bg-gray-100 hover:text-[#0b0b0b]"
     }`;
-
-  const handleNavigationClick =
-    (item: NavigationItem) => (event: ReactMouseEvent<HTMLAnchorElement>) => {
-      if (item.id !== "pre-orders" || pathname !== "/") {
-        return;
-      }
-
-      event.preventDefault();
-
-      const didScroll = scrollToSectionById(PRE_ORDERS_SECTION_ID);
-
-      if (!didScroll) {
-        window.location.assign(item.href);
-      }
-    };
 
   const accountLabel = user?.name ?? "Account";
   const avatarLetter = user?.name?.charAt(0).toUpperCase();
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white">
-      <div className="mx-auto w-full max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               type="button"
@@ -150,7 +133,7 @@ export default function Navbar({ categories = [], navigation }: NavbarProps) {
             >
               <Menu className="h-5 w-5" />
             </button>
-            <Link href="/" className="relative h-8 w-36">
+            <Link href="/" prefetch className="relative h-8 w-36">
               <Image
                 src="/logo.svg"
                 alt="Creality Kuwait"
@@ -160,12 +143,17 @@ export default function Navbar({ categories = [], navigation }: NavbarProps) {
                 priority
               />
             </Link>
-            <div className="hidden lg:flex lg:items-center lg:gap-6">
+            <div className="hidden lg:flex lg:flex-nowrap lg:items-center lg:gap-6">
               <StoreSwitcher />
               {navigation.map((item) => {
                 if (item.kind === "mega") {
                   return (
-                    <div key={item.id} className={`relative ${navLinkClass(item)}`}>
+                    <div
+                      key={item.id}
+                      className={`relative flex h-9 shrink-0 flex-nowrap items-center whitespace-nowrap ${
+                        isActiveLink(item) ? "rounded-full bg-gray-100 px-3 text-[#0b0b0b]" : "rounded-full px-3 text-gray-600"
+                      }`}
+                    >
                       <MegaMenu
                         label={item.label}
                         href={item.href}
@@ -181,7 +169,7 @@ export default function Navbar({ categories = [], navigation }: NavbarProps) {
                       <button
                         type="button"
                         onClick={() => setAccountOpen((prev) => !prev)}
-                        className={`${navLinkClass(item)} flex items-center gap-2`}
+                        className={`${navLinkClass(item)} gap-2`}
                         aria-haspopup="menu"
                         aria-expanded={accountOpen}
                       >
@@ -216,10 +204,15 @@ export default function Navbar({ categories = [], navigation }: NavbarProps) {
                   <Link
                     key={item.id}
                     href={item.href}
-                    className={navLinkClass(item)}
-                    onClick={handleNavigationClick(item)}
+                    prefetch
+                    className={`${navLinkClass(item)} ${item.id === "pre-orders" ? "bg-[#f4faef] text-[#2f5d1d] hover:bg-[#edf7e7]" : ""}`}
                   >
-                    {item.label}
+                    <span>{item.label}</span>
+                    {item.id === "pre-orders" && (
+                      <span className="inline-flex items-center rounded-full bg-[#6BBE45] px-1.5 py-[2px] text-[10px] font-semibold uppercase tracking-[0.14em] text-white">
+                        New
+                      </span>
+                    )}
                   </Link>
                 );
               })}
@@ -230,6 +223,7 @@ export default function Navbar({ categories = [], navigation }: NavbarProps) {
             <SearchBar />
             <Link
               href="/cart"
+              prefetch
               className="relative text-[#0b0b0b] transition hover:text-black"
               aria-label="Cart"
             >
@@ -245,6 +239,7 @@ export default function Navbar({ categories = [], navigation }: NavbarProps) {
           <div className="flex items-center gap-3 lg:hidden">
             <Link
               href="/cart"
+              prefetch
               className="relative rounded-md border border-gray-200 p-2"
               aria-label="Cart"
             >
@@ -257,6 +252,7 @@ export default function Navbar({ categories = [], navigation }: NavbarProps) {
             </Link>
             <Link
               href="/account"
+              prefetch
               className="rounded-md border border-gray-200 p-2"
               aria-label="Account"
             >
@@ -265,7 +261,7 @@ export default function Navbar({ categories = [], navigation }: NavbarProps) {
           </div>
         </div>
 
-        <div className="mt-3 lg:hidden">
+        <div className="pb-3 lg:hidden">
           <MobileStoreSwitcher />
         </div>
       </div>
@@ -274,6 +270,7 @@ export default function Navbar({ categories = [], navigation }: NavbarProps) {
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         navigation={navigation}
+        categories={categories}
       />
     </header>
   );

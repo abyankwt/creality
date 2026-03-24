@@ -69,8 +69,12 @@ export interface Product {
   currency_minor_unit?: number;
   images: ProductImage[];
   attributes: ProductAttribute[];
+  category_slug: string[];
   categories: ProductCategory[];
   tags: ProductTag[];
+  is_preorder: boolean;
+  lead_time?: string | null;
+  order_type: ProductOrderType;
   meta_data?: ProductMeta[];
   product_order_type: ProductOrderType;
   is_in_stock?: boolean | null;

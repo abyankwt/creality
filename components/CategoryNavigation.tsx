@@ -1,26 +1,31 @@
 import Link from "next/link";
-import { Package, Printer, ScanLine, Wrench } from "lucide-react";
+import { Clock3, Package, Printer, ScanLine, Wrench } from "lucide-react";
 
 const CATEGORIES = [
   {
-    title: "Printers",
-    href: "/category/3d-printers",
+    title: "K Series",
+    href: "/category/k-series",
     icon: Printer,
   },
   {
-    title: "Filament",
-    href: "/category/materials",
+    title: "PLA Filaments",
+    href: "/category/pla-filaments",
     icon: Package,
   },
   {
-    title: "Spare Parts",
-    href: "/category/spare-parts",
+    title: "Accessories",
+    href: "/category/accessories",
     icon: Wrench,
   },
   {
     title: "Scanners",
     href: "/category/3d-scanners",
     icon: ScanLine,
+  },
+  {
+    title: "Pre-orders",
+    href: "/pre-orders",
+    icon: Clock3,
   },
 ] as const;
 
@@ -37,11 +42,12 @@ export default function CategoryNavigation() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
           {CATEGORIES.map(({ title, href, icon: Icon }) => (
             <Link
               key={title}
               href={href}
+              prefetch
               className="category-card flex min-h-[120px] flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white px-4 py-5 text-center transition hover:border-gray-300 hover:shadow-sm"
             >
               <span className="mb-3 inline-flex rounded-full bg-gray-100 p-3 text-gray-800">

@@ -1,17 +1,16 @@
 import "server-only";
 
-import { mockPreOrders } from "@/lib/mockPreOrders";
 import { fetchProducts } from "@/lib/woocommerce";
 import type { Product } from "@/lib/woocommerce-types";
 
 const PRE_ORDER_SCAN_PAGE_SIZE = 100;
-const PRE_ORDER_SCAN_MAX_PAGES = 5;
+const PRE_ORDER_NAV_SCAN_MAX_PAGES = 5;
 
 function isPreOrderProduct(product: Product) {
   return product.product_order_type === "pre_order";
 }
 
-async function scanCatalogForPreOrders() {
+async function scanCatalogForPreOrders(maxPages?: number) {
   try {
     const firstPage = await fetchProducts({
       page: 1,
@@ -21,15 +20,14 @@ async function scanCatalogForPreOrders() {
       firstPage.totalProducts > 0 || firstPage.data.length > 0;
     const preOrders = firstPage.data.filter(isPreOrderProduct);
 
-    if (preOrders.length > 0) {
+    if (maxPages && preOrders.length > 0) {
       return { hasBackendData, preOrders };
     }
 
     // Cap the scan so the navigation check stays cheap on layout renders.
-    const totalPagesToScan = Math.min(
-      firstPage.totalPages,
-      PRE_ORDER_SCAN_MAX_PAGES
-    );
+    const totalPagesToScan = maxPages
+      ? Math.min(firstPage.totalPages, maxPages)
+      : firstPage.totalPages;
 
     for (let page = 2; page <= totalPagesToScan; page += 1) {
       const pageResult = await fetchProducts({
@@ -38,7 +36,7 @@ async function scanCatalogForPreOrders() {
       });
       preOrders.push(...pageResult.data.filter(isPreOrderProduct));
 
-      if (preOrders.length > 0) {
+      if (maxPages && preOrders.length > 0) {
         break;
       }
     }
@@ -52,9 +50,29 @@ async function scanCatalogForPreOrders() {
   }
 }
 
-export async function hasPreOrderProducts() {
+export async function fetchPreOrderProducts({
+  page = 1,
+  perPage = 12,
+}: {
+  page?: number;
+  perPage?: number;
+}) {
   const { preOrders } = await scanCatalogForPreOrders();
+  const totalProducts = preOrders.length;
+  const totalPages = Math.max(1, Math.ceil(totalProducts / perPage));
+  const startIndex = Math.max(0, (page - 1) * perPage);
 
-  // Keep the nav item visible in demo environments whenever mock pre-orders exist.
-  return preOrders.length > 0 || mockPreOrders.length > 0;
+  return {
+    data: preOrders.slice(startIndex, startIndex + perPage),
+    totalPages,
+    totalProducts,
+  };
+}
+
+export async function hasPreOrderProducts() {
+  const { preOrders } = await scanCatalogForPreOrders(
+    PRE_ORDER_NAV_SCAN_MAX_PAGES
+  );
+
+  return preOrders.length > 0;
 }
