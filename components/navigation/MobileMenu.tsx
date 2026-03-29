@@ -19,6 +19,10 @@ export default function MobileMenu({
 }: MobileMenuProps) {
   if (!open) return null;
 
+  const visibleNavigation = navigation.filter(
+    (item) => item.label !== "Ramadan Sale"
+  );
+
   return (
     <div
       className="fixed inset-0 z-50 bg-white"
@@ -42,7 +46,7 @@ export default function MobileMenu({
 
       <div className="h-[calc(100vh-65px)] overflow-y-auto px-5 pb-10 pt-5">
         <MobileDrawerMenu
-          navigation={navigation}
+          navigation={visibleNavigation}
           categories={categories}
           onNavigate={onClose}
         />

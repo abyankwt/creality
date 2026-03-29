@@ -48,6 +48,7 @@ const SocialIcon = ({ platform }: { platform: string }) => {
     case "x": return <Twitter className="h-4 w-4" />;
     case "youtube": return <Youtube className="h-4 w-4" />;
     case "discord": return <MessageCircle className="h-4 w-4" />;
+    case "whatsapp": return <MessageCircle className="h-4 w-4" />;
     case "tiktok": return <Video className="h-4 w-4" />;
     default: return null;
   }
@@ -135,7 +136,11 @@ export default function Footer() {
                     href={social.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition hover:border-gray-300 hover:text-black hover:shadow-sm"
+                    className={`flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 transition hover:shadow-sm ${
+                      social.platform === "WhatsApp"
+                        ? "hover:border-[#25D366] hover:text-[#25D366]"
+                        : "hover:border-gray-300 hover:text-black"
+                    }`}
                     aria-label={`Visit us on ${social.platform}`}
                   >
                     <SocialIcon platform={social.platform} />

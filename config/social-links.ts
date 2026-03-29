@@ -10,19 +10,25 @@ export type SocialConfig = {
 
 export const SOCIAL_LINKS: SocialConfig = {
     official: [
-        { platform: "TikTok", url: "https://tiktok.com/@crealityofficial" },
-        { platform: "YouTube", url: "https://youtube.com/c/Creality3D" },
-        { platform: "Instagram", url: "https://instagram.com/crealityofficial" },
+        { platform: "TikTok", url: "https://www.tiktok.com/@crealityofficial" },
+        { platform: "YouTube", url: "https://www.youtube.com/@Creality" },
+        { platform: "Instagram", url: "https://www.instagram.com/creality.kw/" },
         { platform: "Facebook", url: "https://facebook.com/Creality3D" },
-        { platform: "X", url: "https://x.com/creality3d" },
-        { platform: "Discord", url: "https://discord.gg/creality" },
+        { platform: "X", url: "https://x.com/Creality3dP" },
+        {
+            platform: "WhatsApp",
+            url: "https://wa.me/96522092260?text=Hello%2C%20I%20need%20assistance%20with%20your%20products.",
+        },
     ],
     local: [
-        { platform: "TikTok", url: "https://tiktok.com/@crealitykuwait" },
-        { platform: "YouTube", url: "https://youtube.com/@crealitykuwait" },
-        { platform: "Instagram", url: "https://instagram.com/crealitykuwait" },
+        { platform: "TikTok", url: "https://www.tiktok.com/@crealityofficial" },
+        { platform: "YouTube", url: "https://www.youtube.com/@Creality" },
+        { platform: "Instagram", url: "https://www.instagram.com/creality.kw/" },
         { platform: "Facebook", url: "https://facebook.com/crealitykuwait" },
-        { platform: "X", url: "https://x.com/crealitykuwait" },
-        { platform: "Discord", url: "https://discord.gg/crealitykuwait" },
+        { platform: "X", url: "https://x.com/Creality3dP" },
+        {
+            platform: "WhatsApp",
+            url: "https://wa.me/96522092260?text=Hello%2C%20I%20need%20assistance%20with%20your%20products.",
+        },
     ],
 };
