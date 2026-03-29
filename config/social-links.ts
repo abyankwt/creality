@@ -10,10 +10,10 @@ export type SocialConfig = {
 
 export const SOCIAL_LINKS: SocialConfig = {
     official: [
-        { platform: "TikTok", url: "https://www.tiktok.com/@crealityofficial" },
+        { platform: "TikTok", url: "https://www.tiktok.com/@creality.kw?_r=1&_t=ZS-955cGDLCI9x" },
         { platform: "YouTube", url: "https://www.youtube.com/@Creality" },
         { platform: "Instagram", url: "https://www.instagram.com/creality.kw/" },
-        { platform: "Facebook", url: "https://facebook.com/Creality3D" },
+        { platform: "Facebook", url: "https://www.facebook.com/share/18Jr5Wbqkq/?mibextid=wwXIfr" },
         { platform: "X", url: "https://x.com/Creality3dP" },
         {
             platform: "WhatsApp",
@@ -21,10 +21,10 @@ export const SOCIAL_LINKS: SocialConfig = {
         },
     ],
     local: [
-        { platform: "TikTok", url: "https://www.tiktok.com/@crealityofficial" },
+        { platform: "TikTok", url: "https://www.tiktok.com/@creality.kw?_r=1&_t=ZS-955cGDLCI9x" },
         { platform: "YouTube", url: "https://www.youtube.com/@Creality" },
         { platform: "Instagram", url: "https://www.instagram.com/creality.kw/" },
-        { platform: "Facebook", url: "https://facebook.com/crealitykuwait" },
+        { platform: "Facebook", url: "https://www.facebook.com/share/18Jr5Wbqkq/?mibextid=wwXIfr" },
         { platform: "X", url: "https://x.com/Creality3dP" },
         {
             platform: "WhatsApp",
