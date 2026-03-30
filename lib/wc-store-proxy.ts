@@ -19,7 +19,7 @@ export async function proxyToWooStore(
     );
   }
 
-  const url = `${baseUrl.replace(/\/$/, "")}/wp-json/wc/store/${path}`;
+  const url = `${baseUrl.replace(/\/$/, "")}/wp-json/wc/store/v1/${path}`;
 
   const outgoing = new Headers();
 

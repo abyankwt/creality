@@ -117,7 +117,9 @@ const getBaseUrl = () => {
 
 const buildStoreUrl = (path: string, params?: StoreRequestParams) => {
   const baseUrl = getBaseUrl();
-  const url = new URL(`${baseUrl}/wp-json/wc/store/${path.replace(/^\//, "")}`);
+  const url = new URL(
+    `${baseUrl}/wp-json/wc/store/v1/${path.replace(/^\//, "")}`
+  );
 
   Object.entries(params ?? {}).forEach(([key, value]) => {
     if (value !== undefined) {
@@ -245,12 +247,21 @@ async function storeRequest<T>(
   params?: StoreRequestParams
 ): Promise<{ data: T; totalPages: number; totalProducts: number }> {
   const url = buildStoreUrl(path, params);
-  const response = await fetch(url.toString(), {
-    headers: {
-      Accept: "application/json",
-    },
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(url.toString(), {
+      headers: {
+        Accept: "application/json",
+      },
+      cache: "no-store",
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unknown network error";
+    throw new Error(
+      `WooCommerce Store API fetch failed for ${url.toString()}: ${message}`
+    );
+  }
 
   if (!response.ok) {
     const body = await response.text();

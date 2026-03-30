@@ -12,7 +12,7 @@ export async function searchProducts(query: string): Promise<Product[]> {
   }
 
   const base = getSearchBase().replace(/\/$/, "");
-  const endpoint = `${base}/wp-json/wc/store/products?search=${encodeURIComponent(
+  const endpoint = `${base}/wp-json/wc/store/v1/products?search=${encodeURIComponent(
     trimmed
   )}`;
 

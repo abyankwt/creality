@@ -16,7 +16,7 @@ const forwardRequest = async (
       throw new Error("WC_BASE_URL environment variable is not set.");
     }
 
-    const url = `${baseUrl}/wp-json/wc/store/${path.join("/")}`;
+    const url = `${baseUrl.replace(/\/$/, "")}/wp-json/wc/store/v1/${path.join("/")}`;
     const headers = new Headers();
     const cookie = request.headers.get("cookie");
 
