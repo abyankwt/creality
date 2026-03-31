@@ -325,7 +325,9 @@ function creality_recurring_send_payment_email( $user, $order, $product, $paymen
     // Set HTML content type for this email.
     add_filter( 'wp_mail_content_type', 'creality_recurring_html_content_type' );
 
-    $sent = wp_mail( $to, $subject, $body );
+    $headers = array( 'From: Creality Kuwait <noreply@creality.com.kw>' );
+
+    $sent = wp_mail( $to, $subject, $body, $headers );
 
     // Remove the filter immediately to avoid affecting other emails.
     remove_filter( 'wp_mail_content_type', 'creality_recurring_html_content_type' );

@@ -93,7 +93,7 @@ export default function CampaignHero({ slides }: CampaignHeroProps) {
                         alt={slide.title}
                         mode="banner"
                         priority={index === 0}
-                        sizes="100vw"
+                        sizes="(max-width: 768px) 100vw, 1152px"
                         className="h-full rounded-none"
                         imageClassName="transition-transform duration-500 ease-out"
                       />

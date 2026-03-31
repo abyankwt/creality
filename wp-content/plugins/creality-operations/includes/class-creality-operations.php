@@ -17,6 +17,8 @@ final class Creality_Operations {
     const RETURNS_TABLE    = 'creality_returns';
     const TICKET_POST_TYPE = 'creality_ticket';
     const MODEL_POST_TYPE  = 'creality_model';
+    const EMAIL_FROM       = 'noreply@creality.com.kw';
+    const EMAIL_FROM_NAME  = 'Creality Kuwait';
 
     /** @var self|null */
     private static $instance = null;
@@ -76,6 +78,10 @@ final class Creality_Operations {
         add_filter( 'woocommerce_product_variation_get_backorders', array( $this, 'allow_special_order_cart_backorder_mode' ), 10, 2 );
         add_filter( 'woocommerce_product_is_in_stock', array( $this, 'allow_special_order_cart_stock' ), 10, 2 );
         add_filter( 'woocommerce_product_backorders_allowed', array( $this, 'allow_special_order_cart_backorders' ), 10, 3 );
+        add_filter( 'wp_mail_from', array( $this, 'filter_email_from_address' ) );
+        add_filter( 'wp_mail_from_name', array( $this, 'filter_email_from_name' ) );
+        add_filter( 'woocommerce_email_from_address', array( $this, 'filter_email_from_address' ) );
+        add_filter( 'woocommerce_email_from_name', array( $this, 'filter_email_from_name' ) );
     }
 
     /**
@@ -2307,6 +2313,30 @@ final class Creality_Operations {
      */
     private function is_product_out_of_stock( $product ) {
         return 'outofstock' === $product->get_stock_status();
+    }
+
+    /**
+     * Force the sender address for automated platform emails.
+     *
+     * @param string $email Current sender email.
+     * @return string
+     */
+    public function filter_email_from_address( $email ) {
+        unset( $email );
+
+        return self::EMAIL_FROM;
+    }
+
+    /**
+     * Force the sender name for automated platform emails.
+     *
+     * @param string $name Current sender name.
+     * @return string
+     */
+    public function filter_email_from_name( $name ) {
+        unset( $name );
+
+        return self::EMAIL_FROM_NAME;
     }
 
     /**

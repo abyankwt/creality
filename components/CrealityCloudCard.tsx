@@ -20,6 +20,7 @@ export default function CrealityCloudCard() {
           width={20}
           height={20}
           className="h-5 w-5 object-contain"
+          style={{ height: "auto" }}
         />
       </div>
       <div className="flex flex-col">

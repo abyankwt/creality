@@ -14,9 +14,7 @@ import SupportCard from "@/components/SupportCard";
 import SupportFaqAccordion, {
   type SupportFaqItem,
 } from "@/components/SupportFaqAccordion";
-
-const SUPPORT_EMAIL =
-  process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@creality.com.kw";
+import { SUPPORT_EMAIL } from "@/config/emails";
 
 const QUICK_ACTIONS = [
   {
@@ -187,7 +185,7 @@ export default function SupportPage() {
                   Talk to Support
                 </a>
                 <a
-                  href={`https://wa.me/96500000000?text=${encodeURIComponent("Hello, I need support with my order.")}`}
+                  href={`https://wa.me/96522092260?text=${encodeURIComponent("Hello, I need support with my order.")}`}
                   className="inline-flex w-full items-center justify-center rounded-full border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
                 >
                   WhatsApp

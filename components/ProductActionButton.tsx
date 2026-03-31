@@ -22,7 +22,7 @@ const BUTTON_STYLES: Record<ProductOrderType, string> = {
   special_order:
     "bg-[#F97316] hover:bg-[#EA580C]",
   pre_order:
-    "bg-[#9333EA] hover:bg-[#7E22CE]",
+    "bg-gradient-to-r from-[#9333EA] to-[#7E22CE] hover:from-[#7E22CE] hover:to-[#6B21A8]",
 };
 
 const BUTTON_LABELS: Record<ProductOrderType, string> = {
@@ -34,7 +34,7 @@ const BUTTON_LABELS: Record<ProductOrderType, string> = {
 const SHIPPING_MESSAGES: Record<ProductOrderType, string> = {
   in_stock: "In stock",
   special_order: "Delivery 10-12 days",
-  pre_order: "Ships in ~45 days",
+  pre_order: "Delivery: ~45 days",
 };
 
 export default function ProductActionButton({

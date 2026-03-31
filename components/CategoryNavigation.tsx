@@ -91,6 +91,7 @@ function CategoryCard({ title, href, imageName, alt }: CategoryCardItem) {
           width={100}
           height={100}
           className="h-[90px] w-[90px] object-contain"
+          style={{ height: "auto" }}
           unoptimized
         />
       </div>
@@ -128,8 +129,8 @@ export default function CategoryNavigation() {
                 </span>
               </div>
               <div className="flex flex-wrap items-center justify-center gap-6">
-                {group.items.map((item) => (
-                  <CategoryCard key={item.href} {...item} />
+                {group.items.map((item, index) => (
+                  <CategoryCard key={`${item.href}-${index}`} {...item} />
                 ))}
               </div>
             </div>

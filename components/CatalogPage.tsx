@@ -16,11 +16,13 @@ export default function CatalogPage({
   apiQuery,
   emptyMessage,
 }: CatalogPageProps) {
+  const headingTitle = title.replace(/\b3d\b/i, "3D");
+
   return (
     <section className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
       <div className="mb-6">
         <h1 className="text-3xl font-semibold text-gray-900 sm:text-4xl">
-          {title}
+          {headingTitle}
         </h1>
       </div>
 

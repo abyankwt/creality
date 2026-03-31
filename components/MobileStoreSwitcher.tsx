@@ -35,12 +35,12 @@ export default function MobileStoreSwitcher() {
   return (
     <div className="md:hidden">
       <div className="flex w-full rounded-xl border border-gray-200 bg-gray-100 p-1">
-        {items.map((item) => {
+        {items.map((item, index) => {
           const Icon = item.icon;
 
           return (
             <Link
-              key={item.href}
+              key={`${item.href}-${index}`}
               href={item.href}
               aria-current={item.isActive ? "page" : undefined}
               className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition ${

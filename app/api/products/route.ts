@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchCatalogProducts } from "@/lib/catalog";
 import { fetchProducts } from "@/lib/woocommerce";
+import { fetchUsedPrinterProducts } from "@/lib/usedPrinters";
 import type { ProductOrderType } from "@/lib/woocommerce-types";
 
 export async function GET(request: NextRequest) {
@@ -18,9 +19,15 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get("sort") ?? undefined;
     const tag = searchParams.get("tag") ?? searchParams.get("promotion") ?? undefined;
     const exclude = searchParams.get("exclude");
+    const usedPrinters = searchParams.get("used_printers");
 
     const result =
-      search || category || orderby || order
+      usedPrinters === "1" || usedPrinters === "true"
+        ? await fetchUsedPrinterProducts({
+            page,
+            perPage,
+          })
+        : search || category || orderby || order
         ? await fetchProducts({
             page,
             perPage,

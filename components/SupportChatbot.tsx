@@ -2,15 +2,13 @@
 
 import { MessageCircle, Send, UserRound, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { SUPPORT_EMAIL } from "@/config/emails";
 
 type ChatMessage = {
   id: number;
   role: "assistant" | "user";
   text: string;
 };
-
-const SUPPORT_EMAIL =
-  process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@creality.com.kw";
 
 const getReply = (input: string) => {
   const value = input.toLowerCase();

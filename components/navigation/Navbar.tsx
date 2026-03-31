@@ -119,9 +119,6 @@ export default function Navbar({ categories = [], navigation }: NavbarProps) {
 
   const accountLabel = user?.name ?? "Account";
   const avatarLetter = user?.name?.charAt(0).toUpperCase();
-  const visibleNavigation = navigation.filter(
-    (item) => item.label !== "Ramadan Sale"
-  );
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white">
@@ -148,7 +145,7 @@ export default function Navbar({ categories = [], navigation }: NavbarProps) {
             </Link>
             <div className="hidden lg:flex lg:flex-nowrap lg:items-center lg:gap-6">
               <StoreSwitcher />
-              {visibleNavigation.map((item) => {
+              {navigation.map((item) => {
                 if (item.kind === "mega") {
                   return (
                     <div
@@ -272,7 +269,7 @@ export default function Navbar({ categories = [], navigation }: NavbarProps) {
       <MobileMenu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
-        navigation={visibleNavigation}
+        navigation={navigation}
         categories={categories}
       />
     </header>

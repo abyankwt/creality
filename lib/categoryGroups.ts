@@ -6,6 +6,13 @@ export type CategoryGroup = {
   categories: CategoryNode[];
 };
 
+export type MobileCategorySection = {
+  id: string;
+  label: string;
+  category: CategoryNode;
+  allLabel: string;
+};
+
 const GROUP_BLUEPRINT = [
   {
     id: "machines",
@@ -21,6 +28,51 @@ const GROUP_BLUEPRINT = [
     id: "essentials",
     label: "Accessories",
     slugs: ["accessories", "spare-parts"],
+  },
+] as const;
+
+const MOBILE_SECTION_BLUEPRINT = [
+  {
+    id: "3d-printers",
+    label: "3D Printers",
+    slug: "3d-printers",
+    allLabel: "All 3D Printers",
+  },
+  {
+    id: "3d-scanners",
+    label: "3D Scanners",
+    slug: "3d-scanners",
+    allLabel: "All 3D Scanners",
+  },
+  {
+    id: "laser-milling",
+    label: "Laser & Milling",
+    slug: "laser-milling",
+    allLabel: "All Laser & Milling",
+  },
+  {
+    id: "materials",
+    label: "Materials",
+    slug: "materials",
+    allLabel: "All Materials",
+  },
+  {
+    id: "washing-curing",
+    label: "Washing & Curing",
+    slug: "washing-curing",
+    allLabel: "All Washing & Curing",
+  },
+  {
+    id: "accessories-tools",
+    label: "Accessories & Tools",
+    slug: "accessories",
+    allLabel: "All Accessories",
+  },
+  {
+    id: "spare-parts",
+    label: "Spare Parts",
+    slug: "spare-parts",
+    allLabel: "All Spare Parts",
   },
 ] as const;
 
@@ -56,4 +108,38 @@ export function buildCategoryGroups(categories: CategoryNode[]): CategoryGroup[]
   }
 
   return groups.slice(0, 4);
+}
+
+export function buildMobileCategorySections(
+  categories: CategoryNode[]
+): MobileCategorySection[] {
+  const categoryMap = new Map(categories.map((category) => [category.slug, category]));
+  const used = new Set<string>();
+
+  const sections = MOBILE_SECTION_BLUEPRINT.flatMap((section) => {
+    const category = categoryMap.get(section.slug);
+    if (!category) return [];
+
+    used.add(section.slug);
+
+    return [
+      {
+        id: section.id,
+        label: section.label,
+        category,
+        allLabel: section.allLabel,
+      },
+    ];
+  });
+
+  const remainingSections = categories
+    .filter((category) => !used.has(category.slug))
+    .map((category) => ({
+      id: category.slug,
+      label: category.name,
+      category,
+      allLabel: `All ${category.name}`,
+    }));
+
+  return [...sections, ...remainingSections];
 }

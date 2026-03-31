@@ -3,7 +3,7 @@ import "server-only";
 import { fetchProducts } from "@/lib/woocommerce";
 import type { Product } from "@/lib/woocommerce-types";
 
-const PRE_ORDER_SCAN_PAGE_SIZE = 100;
+const PRE_ORDER_SCAN_PAGE_SIZE = 12;
 const PRE_ORDER_NAV_SCAN_MAX_PAGES = 5;
 
 function isPreOrderProduct(product: Product) {

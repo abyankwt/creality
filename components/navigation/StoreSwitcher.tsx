@@ -63,9 +63,9 @@ export default function StoreSwitcher() {
           className="absolute left-0 mt-3 w-60 rounded-2xl border border-gray-100 bg-white p-2 shadow-lg"
           role="menu"
         >
-          {OPTIONS.map((option) => (
+          {OPTIONS.map((option, index) => (
             <Link
-              key={option.href}
+              key={`${option.href}-${index}`}
               href={option.href}
               className="block rounded-xl px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50"
               role="menuitem"

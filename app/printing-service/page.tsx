@@ -172,7 +172,8 @@ export default function PrintingServicePage() {
               alt="3D printing Kuwait City skyline"
               width={900}
               height={700}
-              className="h-full max-h-[360px] w-full object-cover"
+              className="max-h-[360px] w-full object-cover"
+              style={{ height: "auto" }}
               priority
             />
           </div>

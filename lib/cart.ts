@@ -119,6 +119,27 @@ export type CartResponse = {
   errors?: Array<{ code: string; message: string }>;
 };
 
+const EMPTY_CART: CartResponse = {
+  items: [],
+  items_count: 0,
+  items_weight: 0,
+  totals: {
+    total_items: "0",
+    total_items_tax: "0",
+    total_fees: "0",
+    total_fees_tax: "0",
+    total_discount: "0",
+    total_discount_tax: "0",
+    total_shipping: "0",
+    total_shipping_tax: "0",
+    total_price: "0",
+    total_tax: "0",
+  },
+  coupons: [],
+  needs_payment: false,
+  needs_shipping: false,
+};
+
 // ── Custom error class for cart conflicts ──
 
 export class CartConflictError extends Error {
@@ -193,7 +214,12 @@ async function fetchStoreApi<T>(
 // ── Public API ──
 
 export async function fetchCart(): Promise<CartResponse> {
-  return fetchStoreApi<CartResponse>("cart", { method: "GET" });
+  try {
+    return await fetchStoreApi<CartResponse>("cart", { method: "GET" });
+  } catch (error) {
+    console.error("Cart fetch failed, returning empty cart.", error);
+    return EMPTY_CART;
+  }
 }
 
 export async function addToCart(

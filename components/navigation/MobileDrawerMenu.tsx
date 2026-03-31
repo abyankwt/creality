@@ -8,7 +8,7 @@ import {
   type NavigationItem,
   type NavigationLink,
 } from "@/config/navigation";
-import { buildCategoryGroups } from "@/lib/categoryGroups";
+import { buildMobileCategorySections } from "@/lib/categoryGroups";
 import type { CategoryNode } from "@/lib/categories";
 
 type MobileDrawerMenuProps = {
@@ -97,38 +97,41 @@ function DrawerRow({
 }
 
 function CategoryAccordion({
-  groups,
+  sections,
   onNavigate,
 }: {
-  groups: ReturnType<typeof buildCategoryGroups>;
+  sections: ReturnType<typeof buildMobileCategorySections>;
   onNavigate?: () => void;
 }) {
   const [openGroupId, setOpenGroupId] = useState<string | null>(
-    groups[0]?.id ?? null
+    sections[0]?.id ?? null
   );
 
   return (
-    <div className="space-y-3 pb-3 pl-4">
-      {groups.map((group) => {
-        const expanded = openGroupId === group.id;
-        const contentId = `mobile-category-group-${group.id}`;
+    <div className="space-y-4 pb-4 pl-4">
+      {sections.map((section) => {
+        const expanded = openGroupId === section.id;
+        const contentId = `mobile-category-group-${section.id}`;
+        const { category } = section;
 
         return (
           <div
-            key={group.id}
+            key={section.id}
             className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50"
           >
             <button
               type="button"
               onClick={() =>
-                setOpenGroupId((current) => (current === group.id ? null : group.id))
+                setOpenGroupId((current) =>
+                  current === section.id ? null : section.id
+                )
               }
-              className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+              className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left"
               aria-expanded={expanded}
               aria-controls={contentId}
             >
-              <span className="text-sm font-semibold text-gray-900">
-                {group.label}
+              <span className="text-base font-semibold leading-tight text-gray-900">
+                {section.label}
               </span>
               <ChevronDown
                 className={`h-4 w-4 text-gray-400 transition-transform duration-300 ${
@@ -145,41 +148,28 @@ function CategoryAccordion({
               }`}
             >
               <div className="overflow-hidden">
-                <div className="space-y-4 border-t border-gray-200 px-4 py-3">
-                  {group.categories.map((category) => (
-                    <div key={category.id}>
+                <div className="border-t border-gray-200 px-4 py-3">
+                  <div className="flex flex-col gap-2.5 pl-1">
+                    <Link
+                      href={`/category/${category.slug}`}
+                      prefetch
+                      className="text-sm text-gray-700 transition hover:text-black"
+                      onClick={onNavigate}
+                    >
+                      {section.allLabel}
+                    </Link>
+                    {category.children.map((child) => (
                       <Link
-                        href={`/category/${category.slug}`}
+                        key={child.id}
+                        href={`/category/${child.slug}`}
                         prefetch
-                        className="text-sm font-semibold text-gray-900 transition hover:text-black"
+                        className="text-sm text-gray-700 transition hover:text-black"
                         onClick={onNavigate}
                       >
-                        {category.name}
+                        {child.name}
                       </Link>
-
-                      <div className="mt-2 flex flex-col gap-2 pl-4">
-                        <Link
-                          href={`/category/${category.slug}`}
-                          prefetch
-                          className="text-sm text-gray-600 transition hover:text-black"
-                          onClick={onNavigate}
-                        >
-                          All {category.name}
-                        </Link>
-                        {category.children.map((child) => (
-                          <Link
-                            key={child.id}
-                            href={`/category/${child.slug}`}
-                            prefetch
-                            className="text-sm text-gray-600 transition hover:text-black"
-                            onClick={onNavigate}
-                          >
-                            {child.name}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -211,7 +201,7 @@ export default function MobileDrawerMenu({
   const visibleCategories = categories.filter(
     (category) => category.children.length > 0 || categories.length <= 8
   );
-  const categoryGroups = buildCategoryGroups(visibleCategories);
+  const categorySections = buildMobileCategorySections(visibleCategories);
 
   const toggleSection = (sectionId: string) => {
     setOpenSection((current) => (current === sectionId ? null : sectionId));
@@ -264,7 +254,7 @@ export default function MobileDrawerMenu({
                 >
                   <div className="overflow-hidden">
                     <CategoryAccordion
-                      groups={categoryGroups}
+                      sections={categorySections}
                       onNavigate={onNavigate}
                     />
                   </div>

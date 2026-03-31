@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import Footer from "@/components/Footer";
 import GlobalClientUI from "@/components/GlobalClientUI";
 import Navbar from "@/components/navigation/Navbar";
-import { buildNavigation } from "@/config/navigation";
+import { buildNavigation, type PromotionMenuItem } from "@/config/navigation";
 import { CartProvider } from "@/context/CartContext";
 import { getCategoryTree } from "@/lib/categories";
 import { hasPreOrderProducts } from "@/lib/preOrders";
@@ -24,8 +24,11 @@ export default async function RootLayout({
     getCategoryTree(),
     hasPreOrderProducts(),
   ]);
+  // Replace this with the WordPress seasonal menu payload when the endpoint is ready.
+  const seasonalPromotions: PromotionMenuItem[] = [];
   const navigation = buildNavigation({
     hasPreOrders,
+    promotions: seasonalPromotions,
     now: new Date(),
   });
 

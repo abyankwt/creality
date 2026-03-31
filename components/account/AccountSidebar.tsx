@@ -19,11 +19,11 @@ export default function AccountSidebar() {
         Account
       </p>
       <nav className="mt-5 space-y-2">
-        {navItems.map((item) => {
+        {navItems.map((item, index) => {
           const isActive = pathname === item.href;
           return (
             <Link
-              key={item.href}
+              key={`${item.href}-${index}`}
               href={item.href}
               className={`flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium transition ${isActive
                   ? "bg-black text-white"

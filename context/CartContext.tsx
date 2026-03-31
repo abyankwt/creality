@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -40,14 +41,24 @@ type CartContextValue = {
 };
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
+const REFRESH_DEBOUNCE_MS = 150;
 
 /* ── Provider ── */
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(false);
+  const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const refreshPromiseRef = useRef<Promise<void> | null>(null);
+  const refreshResolversRef = useRef<Array<() => void>>([]);
 
-  const refreshCart = useCallback(async () => {
+  const flushRefreshResolvers = useCallback(() => {
+    const resolvers = refreshResolversRef.current;
+    refreshResolversRef.current = [];
+    resolvers.forEach((resolve) => resolve());
+  }, []);
+
+  const runRefreshCart = useCallback(async () => {
     setLoading(true);
     try {
       const data = await fetchCart();
@@ -58,6 +69,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
   }, []);
+
+  const refreshCart = useCallback(() => {
+    return new Promise<void>((resolve) => {
+      refreshResolversRef.current.push(resolve);
+
+      if (refreshPromiseRef.current) {
+        void refreshPromiseRef.current.finally(flushRefreshResolvers);
+        return;
+      }
+
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+
+      refreshTimeoutRef.current = setTimeout(() => {
+        refreshTimeoutRef.current = null;
+        refreshPromiseRef.current = runRefreshCart().finally(() => {
+          refreshPromiseRef.current = null;
+          flushRefreshResolvers();
+        });
+      }, REFRESH_DEBOUNCE_MS);
+    });
+  }, [flushRefreshResolvers, runRefreshCart]);
 
   const addItem = useCallback(async (productId: number, quantity: number) => {
     setLoading(true);
@@ -113,6 +147,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refreshCart();
   }, [refreshCart]);
+
+  useEffect(() => {
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+      flushRefreshResolvers();
+    };
+  }, [flushRefreshResolvers]);
 
   const itemCount = cart?.items_count ?? 0;
 

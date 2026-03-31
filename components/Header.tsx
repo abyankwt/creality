@@ -183,13 +183,20 @@ export default function Header() {
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white">
       <div className="mx-auto flex w-full max-w-7xl items-center gap-6 px-6 py-3 lg:px-8">
         <Link href="/" className="inline-block">
-          <Image src="/logo.svg" alt="Creality Kuwait Logo" width={160} height={45} className="object-contain" />
+          <Image
+            src="/logo.svg"
+            alt="Creality Kuwait Logo"
+            width={160}
+            height={45}
+            className="object-contain"
+            style={{ height: "auto" }}
+          />
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm text-gray-500 md:flex">
-          {navLinks.map((link) => (
+          {navLinks.map((link, index) => (
             <Link
-              key={link.href}
+              key={`${link.href}-${index}`}
               href={link.href}
               className={`transition hover:text-[#0b0b0b] ${pathname === link.href || pathname?.startsWith(`${link.href}/`)
                 ? "text-[#0b0b0b]"

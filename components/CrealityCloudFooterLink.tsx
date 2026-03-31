@@ -19,6 +19,7 @@ export default function CrealityCloudFooterLink() {
         width={24}
         height={24}
         className="h-6 w-6 object-contain"
+        style={{ height: "auto" }}
       />
       <div className="flex flex-col">
         <span className="text-sm font-medium text-gray-900">Creality Cloud</span>

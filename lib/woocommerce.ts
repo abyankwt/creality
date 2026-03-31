@@ -107,6 +107,21 @@ export type FetchProductsByCategoryOptions = {
   seriesSlug?: string;
 };
 
+type StoreRequestResult<T> = {
+  data: T;
+  totalPages: number;
+  totalProducts: number;
+};
+
+type StoreRequestOptions<T> = {
+  fallbackData: T;
+  revalidate?: number;
+};
+
+const STORE_API_TIMEOUT_MS = 5000;
+const STORE_API_REVALIDATE_SECONDS = 120;
+const storeResponseCache = new Map<string, StoreRequestResult<unknown>>();
+
 const getBaseUrl = () => {
   const baseUrl = process.env.WC_BASE_URL;
   if (!baseUrl) {
@@ -244,38 +259,88 @@ const normalizeProduct = (product: RawStoreProduct): Product => {
 
 async function storeRequest<T>(
   path: string,
-  params?: StoreRequestParams
-): Promise<{ data: T; totalPages: number; totalProducts: number }> {
-  const url = buildStoreUrl(path, params);
-  let response: Response;
+  params: StoreRequestParams | undefined,
+  options: StoreRequestOptions<T>
+): Promise<StoreRequestResult<T>> {
+  let url: URL;
+  let cacheKey = path;
+
   try {
-    response = await fetch(url.toString(), {
+    url = buildStoreUrl(path, params);
+    cacheKey = url.toString();
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Unknown URL build error";
+    console.error(
+      `WooCommerce Store API setup failed for ${path}: ${message}`
+    );
+
+    return getStoreFallbackResult(cacheKey, options.fallbackData);
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), STORE_API_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(url.toString(), {
       headers: {
         Accept: "application/json",
       },
-      cache: "no-store",
+      next: {
+        revalidate: options.revalidate ?? STORE_API_REVALIDATE_SECONDS,
+      },
+      signal: controller.signal,
     });
+
+    if (!response.ok) {
+      const body = await response.text();
+      console.error(
+        `WooCommerce Store API request failed for ${url.toString()} (${response.status}): ${
+          body || response.statusText
+        }`
+      );
+
+      return getStoreFallbackResult(cacheKey, options.fallbackData);
+    }
+
+    const totalPages = parseInt(response.headers.get("x-wp-totalpages") ?? "1", 10);
+    const totalProducts = parseInt(response.headers.get("x-wp-total") ?? "0", 10);
+    const result = {
+      data: (await response.json()) as T,
+      totalPages,
+      totalProducts,
+    };
+
+    storeResponseCache.set(cacheKey, result);
+    return result;
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown network error";
-    throw new Error(
+    console.error(
       `WooCommerce Store API fetch failed for ${url.toString()}: ${message}`
     );
+
+    return getStoreFallbackResult(cacheKey, options.fallbackData);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+function getStoreFallbackResult<T>(
+  cacheKey: string,
+  fallbackData: T
+): StoreRequestResult<T> {
+  const cached = storeResponseCache.get(cacheKey);
+
+  if (cached) {
+    return cached as StoreRequestResult<T>;
   }
 
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(
-      `WooCommerce Store API request failed (${response.status}). ${
-        body || response.statusText
-      }`
-    );
-  }
-
-  const totalPages = parseInt(response.headers.get("x-wp-totalpages") ?? "1", 10);
-  const totalProducts = parseInt(response.headers.get("x-wp-total") ?? "0", 10);
-
-  return { data: (await response.json()) as T, totalPages, totalProducts };
+  return {
+    data: fallbackData,
+    totalPages: 0,
+    totalProducts: 0,
+  };
 }
 
 function unwrapProducts(data: RawStoreProductResponse): RawStoreProduct[] {
@@ -297,7 +362,8 @@ export async function fetchProducts(
       category: options.category,
       tag: options.tag,
       include: options.include,
-    }
+    },
+    { fallbackData: [] }
   );
 
   return {
@@ -311,7 +377,7 @@ export async function fetchProductBySlug(slug: string): Promise<Product | null> 
   const { data } = await storeRequest<RawStoreProductResponse>("products", {
     slug,
     per_page: 1,
-  });
+  }, { fallbackData: [] });
 
   const products = unwrapProducts(data).map(normalizeProduct);
   return products[0] ?? null;
@@ -326,8 +392,8 @@ export async function fetchProductsByIds(ids: number[]): Promise<FetchProductsRe
 
 export async function fetchProductCategories(): Promise<ProductCategory[]> {
   const { data } = await storeRequest<RawProductCategory[]>("products/categories", {
-    per_page: 100,
-  });
+    per_page: 12,
+  }, { fallbackData: [] });
 
   return data.map(normalizeCategory);
 }

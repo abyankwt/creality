@@ -20,6 +20,8 @@ import type {
 } from "@/lib/store-types";
 
 const FALLBACK_IMAGE = "/images/product-placeholder.svg";
+const PRE_ORDER_BUTTON_STYLE =
+  "bg-gradient-to-r from-[#9333EA] to-[#7E22CE] hover:from-[#7E22CE] hover:to-[#6B21A8]";
 
 type ProductDetailProps = {
   product: StoreProduct;
@@ -267,11 +269,11 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const renderProductPrice = () => {
     if (priceInfo.hasSale) {
       return (
-        <div className="product-price">
-          <span className="price-old mr-2 text-gray-400 line-through">
+        <div className="flex items-center gap-2">
+          <span className="text-lg text-gray-400 line-through">
             {formatPrice(priceInfo.regularPrice)}
           </span>
-          <span className="price-sale font-semibold text-gray-900">
+          <span className="text-2xl font-semibold text-black lg:text-3xl">
             {formatPrice(priceInfo.salePrice)}
           </span>
         </div>
@@ -436,7 +438,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                       ? "bg-black hover:bg-gray-900"
                       : availability.type === "special"
                       ? "bg-[#f97316] hover:bg-[#ea580c]"
-                      : "bg-[#2563eb] hover:bg-[#1d4ed8]"
+                      : PRE_ORDER_BUTTON_STYLE
                   } disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400`}
                 >
                   {adding ? "Adding..." : availability.label}
@@ -631,7 +633,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                 ? "bg-black hover:bg-gray-900"
                 : availability.type === "special"
                 ? "bg-[#f97316] hover:bg-[#ea580c]"
-                : "bg-[#2563eb] hover:bg-[#1d4ed8]"
+                : PRE_ORDER_BUTTON_STYLE
             } disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400`}
           >
             {adding ? "Adding..." : availability.label}

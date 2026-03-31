@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import CrealityCloudCard from "@/components/CrealityCloudCard";
+import { INQUIRY_EMAIL, SUPPORT_EMAIL } from "@/config/emails";
 import { SOCIAL_LINKS, SocialLink } from "@/config/social-links";
 import { ChevronDown } from "lucide-react";
 
@@ -102,13 +103,13 @@ const WhatsAppIcon = () => (
 
 const SocialIconBranded = ({ platform }: { platform: string }) => {
   switch (platform.toLowerCase()) {
-    case "tiktok":    return <TikTokIcon />;
-    case "youtube":   return <YouTubeIcon />;
+    case "tiktok": return <TikTokIcon />;
+    case "youtube": return <YouTubeIcon />;
     case "instagram": return <InstagramIcon />;
-    case "facebook":  return <FacebookIcon />;
-    case "x":         return <XIcon />;
-    case "whatsapp":  return <WhatsAppIcon />;
-    default:          return null;
+    case "facebook": return <FacebookIcon />;
+    case "x": return <XIcon />;
+    case "whatsapp": return <WhatsAppIcon />;
+    default: return null;
   }
 };
 
@@ -133,6 +134,7 @@ const footerLinks = [
     title: "Support",
     links: [
       { href: "/support", label: "Help Center" },
+      { href: `mailto:${SUPPORT_EMAIL}`, label: SUPPORT_EMAIL },
       { href: "/support/shipping", label: "Shipping" },
       { href: "/support/warranty", label: "Warranty" },
     ],
@@ -141,7 +143,8 @@ const footerLinks = [
     title: "About",
     links: [
       { href: "/about", label: "Our Story" },
-      { href: "/contact", label: "Contact Us" },
+      { href: "/contact", label: "General Inquiries" },
+      { href: "/contact", label: INQUIRY_EMAIL },
     ],
   },
 ];
@@ -169,15 +172,27 @@ function AccordionSection({ group }: { group: typeof footerLinks[0] }) {
           }`}
       >
         <nav className="flex flex-col gap-3 overflow-hidden text-sm text-gray-500">
-          {group.links.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="transition hover:text-gray-900"
-            >
-              {link.label}
-            </Link>
-          ))}
+          {group.links.map((link, index) =>
+            link.href.startsWith("mailto:") || link.href.startsWith("http") ? (
+              <a
+                key={`${link.href}-${index}`}
+                href={link.href}
+                className="transition hover:text-gray-900"
+                target={link.href.startsWith("http") ? "_blank" : undefined}
+                rel={link.href.startsWith("http") ? "noopener noreferrer" : undefined}
+              >
+                {link.label}
+              </a>
+            ) : (
+              <Link
+                key={`${link.href}-${index}`}
+                href={link.href}
+                className="transition hover:text-gray-900"
+              >
+                {link.label}
+              </Link>
+            )
+          )}
         </nav>
       </div>
     </div>
@@ -195,7 +210,14 @@ export default function Footer() {
           {/* Logo & Social Links */}
           <div className="max-w-xs space-y-6">
             <Link href="/" className="inline-block">
-              <Image src="/logo.svg" alt="Creality Kuwait Logo" width={160} height={45} className="object-contain" />
+              <Image
+                src="/logo.svg"
+                alt="Creality Kuwait Logo"
+                width={160}
+                height={45}
+                className="object-contain"
+                style={{ height: "auto" }}
+              />
             </Link>
 
             <p className="text-sm text-gray-500">

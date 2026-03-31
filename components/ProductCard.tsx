@@ -9,7 +9,7 @@ import OrderWarningModal from "@/components/OrderWarningModal";
 import ProductActionButton from "@/components/ProductActionButton";
 import { useCart } from "@/context/CartContext";
 import { getProductAvailability } from "@/lib/productAvailability";
-import { formatPrice } from "@/lib/price";
+import { formatPrice, getProductPriceInfo } from "@/lib/price";
 import { resolveProductOrderType } from "@/lib/productLogic";
 import type { Product } from "@/lib/woocommerce-types";
 
@@ -41,6 +41,7 @@ export default function ProductCard({
   const toastTimerRef = useRef<number | null>(null);
 
   const resolvedImage = product.images?.[0]?.src || fallbackImage;
+  const priceInfo = getProductPriceInfo(product);
   const productOrderType =
     product_order_type ??
     product.product_order_type ??
@@ -174,9 +175,20 @@ export default function ProductCard({
           </Link>
 
           <div className="mt-2">
-            <span className="text-sm font-bold text-text sm:text-base">
-              {formatPrice(product.price)}
-            </span>
+            {priceInfo.hasSale ? (
+              <div className="flex flex-wrap items-center gap-2 text-sm sm:text-base">
+                <span className="text-sm text-gray-400 line-through sm:text-base">
+                  {formatPrice(priceInfo.regularPrice)}
+                </span>
+                <span className="text-sm font-semibold text-black sm:text-base">
+                  {formatPrice(priceInfo.salePrice)}
+                </span>
+              </div>
+            ) : (
+              <span className="text-sm font-bold text-text sm:text-base">
+                {formatPrice(priceInfo.currentPrice)}
+              </span>
+            )}
           </div>
 
           <div className="product-actions mt-3">

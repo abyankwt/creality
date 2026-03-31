@@ -175,9 +175,9 @@ export default function CategoryIconGrid() {
           </div>
 
           <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-            {selectedCategory.children.map((child) => (
+            {selectedCategory.children.map((child, index) => (
               <Link
-                key={child.href}
+                key={`${child.href}-${index}`}
                 href={child.href}
                 className="group flex min-h-[128px] flex-col items-center justify-between rounded-2xl border border-gray-200 bg-neutral-50 p-3.5 text-center transition hover:border-gray-300 hover:bg-white sm:min-h-[136px] sm:p-4"
               >

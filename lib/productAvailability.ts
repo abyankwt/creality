@@ -39,8 +39,8 @@ export function getProductAvailability(
   if (orderType === "pre_order" || isPreOrderProduct(product)) {
     return {
       type: "preorder",
-      label: "Pre-order",
-      badge: "Pre-order",
+      label: "Pre-Order",
+      badge: "Pre-Order",
       leadTime: resolveProductLeadTime(product),
     };
   }

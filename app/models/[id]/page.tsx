@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { SUPPORT_EMAIL } from "@/config/emails";
 import { Download, Heart, Tag } from "lucide-react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -129,7 +130,7 @@ export default async function ModelDetailPage({ params }: ModelDetailPageProps) 
                   {model.price === null ? "Download" : "Buy"}
                 </button>
                 <Link
-                  href="/support"
+                  href={`mailto:${SUPPORT_EMAIL}`}
                   className="inline-flex items-center justify-center rounded-xl border border-gray-300 px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
                 >
                   Contact Support

@@ -43,6 +43,13 @@ const PRE_ORDERS_ITEM: NavigationItem = {
   href: "/pre-orders",
 };
 
+const USED_3D_PRINTERS_ITEM: NavigationItem = {
+  id: "used-3d-printers",
+  kind: "link",
+  label: "Used 3D Printers",
+  href: "/used-3d-printers",
+};
+
 const STATIC_NAV_ITEMS: NavigationItem[] = [
   {
     id: "printing-service",
@@ -70,29 +77,8 @@ const STATIC_NAV_ITEMS: NavigationItem[] = [
   },
 ];
 
-export const PROMOTIONAL_NAV_ITEMS: PromotionMenuItem[] = [
-  {
-    id: "ramadan-sale",
-    label: "Ramadan Sale",
-    href: "/store?promotion=ramadan-sale",
-    startDate: "2026-02-20",
-    endDate: "2026-03-30",
-  },
-  {
-    id: "eid-sale",
-    label: "Eid Sale",
-    href: "/store?promotion=eid-sale",
-    startDate: "2026-03-31",
-    endDate: "2026-04-07",
-  },
-  {
-    id: "kuwait-independence-day-sale",
-    label: "Kuwait Independence Day Sale",
-    href: "/store?promotion=kuwait-independence-day-sale",
-    startDate: "2026-02-20",
-    endDate: "2026-02-26",
-  },
-];
+// Seasonal promotions should be supplied by the backend when available.
+export const DEFAULT_PROMOTIONAL_NAV_ITEMS: PromotionMenuItem[] = [];
 
 export const ALL_PRODUCTS_CATEGORY_LINKS: NavigationLink[] = [
   { label: "K Series", href: "/category/k-series" },
@@ -132,7 +118,7 @@ export function isPromotionActive(
 }
 
 export function getActivePromotions(
-  promotions: PromotionMenuItem[] = PROMOTIONAL_NAV_ITEMS,
+  promotions: PromotionMenuItem[] = DEFAULT_PROMOTIONAL_NAV_ITEMS,
   now = new Date(),
   timeZone = "Asia/Kuwait"
 ): NavigationItem[] {
@@ -148,13 +134,14 @@ export function getActivePromotions(
 
 export function buildNavigation({
   hasPreOrders,
-  promotions = PROMOTIONAL_NAV_ITEMS,
+  promotions = DEFAULT_PROMOTIONAL_NAV_ITEMS,
   now = new Date(),
   timeZone = "Asia/Kuwait",
 }: BuildNavigationOptions): NavigationItem[] {
   return [
     ALL_PRODUCTS_ITEM,
     ...(hasPreOrders ? [PRE_ORDERS_ITEM] : []),
+    USED_3D_PRINTERS_ITEM,
     ...getActivePromotions(promotions, now, timeZone),
     ...STATIC_NAV_ITEMS,
   ];
