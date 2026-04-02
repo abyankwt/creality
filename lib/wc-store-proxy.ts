@@ -7,6 +7,16 @@ const CART_TOKEN_HEADER = "Cart-Token";
 const WC_NONCE_COOKIE = "wc_nonce";
 const WC_CART_TOKEN_COOKIE = "wc_cart_token";
 
+const RESPONSE_PREVIEW_LENGTH = 400;
+
+function getResponsePreview(value: string): string {
+  return value.replace(/\s+/g, " ").trim().slice(0, RESPONSE_PREVIEW_LENGTH);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export async function proxyToWooStore(
   path: string,
   request: NextRequest
@@ -73,6 +83,8 @@ export async function proxyToWooStore(
   }
 
   const text = await wooResponse.text();
+  const contentType = wooResponse.headers.get("content-type") ?? "";
+  const responsePreview = getResponsePreview(text);
 
 
   let data: unknown;
@@ -82,7 +94,36 @@ export async function proxyToWooStore(
     data = text;
   }
 
-  if (path.startsWith("cart")) {
+  if (!wooResponse.ok) {
+    const diagnostic = {
+      method,
+      path,
+      status: wooResponse.status,
+      statusText: wooResponse.statusText,
+      contentType,
+      upstreamServer: wooResponse.headers.get("server"),
+      upstreamCache: wooResponse.headers.get("x-litespeed-cache"),
+      hasCartToken: Boolean(cartToken),
+      hasNonce: Boolean(nonceToSend),
+      responsePreview,
+    };
+
+    console.error("[Woo Store Proxy] Upstream request failed.", diagnostic);
+
+    if (isRecord(data)) {
+      data = {
+        ...data,
+        diagnostic,
+      };
+    } else {
+      data = {
+        error: `WooCommerce Store API request failed with status ${wooResponse.status}.`,
+        diagnostic,
+      };
+    }
+  }
+
+  if (wooResponse.ok && path.startsWith("cart")) {
     data = await enrichCartResponseWithAvailability(data);
   }
 

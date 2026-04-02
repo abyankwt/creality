@@ -2365,7 +2365,18 @@ final class Creality_Operations {
      * @return bool
      */
     private function is_product_out_of_stock( $product ) {
-        return 'outofstock' === $product->get_stock_status();
+        if ( ! $product instanceof WC_Product ) {
+            return false;
+        }
+
+        $product_data = $product->get_data();
+        $stock_status = isset( $product_data['stock_status'] ) ? $product_data['stock_status'] : '';
+
+        if ( '' === $stock_status ) {
+            $stock_status = get_post_meta( $product->get_id(), '_stock_status', true );
+        }
+
+        return 'outofstock' === $stock_status;
     }
 
     /**

@@ -1418,3 +1418,4 @@ Never assume backend data structure.
 # Learned Rules
 
 <!-- New rules are appended below this line. Do not edit above this section. -->
+1. [CODE] Never call filtered WooCommerce product getter methods from inside the corresponding getter filters — because it can recurse and break Store API cart requests.
