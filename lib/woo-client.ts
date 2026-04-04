@@ -36,6 +36,19 @@ type WooOrderResponse = {
   payment_method_title: string;
 };
 
+type WooProductTaxonomyTermResponse = {
+  id: number;
+  name: string;
+  slug: string;
+};
+
+type WooProductSummaryResponse = {
+  id: number;
+  stock_status?: string;
+  categories?: WooProductTaxonomyTermResponse[];
+  tags?: WooProductTaxonomyTermResponse[];
+};
+
 type WooCustomerResponse = {
   id: number;
   billing: WooAddressResponse;
@@ -157,6 +170,27 @@ export const getWooOrders = async (customerId: number) => {
 
 export const getWooOrder = async (orderId: number) => {
   return wooRequest<WooOrderResponse>(`orders/${orderId}`);
+};
+
+export const getWooProductsByIds = async (productIds: number[]) => {
+  const uniqueIds = [...new Set(productIds)].filter(
+    (id) => Number.isFinite(id) && id > 0
+  );
+
+  if (!uniqueIds.length) {
+    return {
+      ok: true as const,
+      status: 200,
+      data: [] as WooProductSummaryResponse[],
+    };
+  }
+
+  const path = `products?include=${encodeURIComponent(uniqueIds.join(","))}&per_page=${Math.max(
+    uniqueIds.length,
+    1
+  )}`;
+
+  return wooRequest<WooProductSummaryResponse[]>(path);
 };
 
 export const updateWooOrder = async (orderId: number, payload: Record<string, unknown>) => {

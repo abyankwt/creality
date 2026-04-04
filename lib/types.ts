@@ -1,3 +1,5 @@
+import type { OrderTrackingSummary } from "@/lib/orderTracking";
+
 export type ApiResponse<T> =
   | { success: true; data: T }
   | { success: false; error: string };
@@ -22,13 +24,15 @@ export type WooOrderLineItem = {
 export type WooOrder = {
   id: number;
   status: string;
-  date: string;
+  date_created: string;
+  date?: string;
   total: string;
   currency: string;
   line_items?: WooOrderLineItem[];
   billing?: WooAddress;
   shipping?: WooAddress;
   payment_method_title?: string;
+  tracking?: OrderTrackingSummary;
 };
 
 export type WooAddress = {

@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { apiError, apiSuccess, ERROR_MESSAGES, resolveErrorMessage } from "@/lib/errors";
 import { SESSION_COOKIE_NAME, verifySession } from "@/lib/auth-session";
-import { getWooOrder } from "@/lib/woo-client";
+import { buildOrderTrackingSummary } from "@/lib/orderTracking";
+import { getWooOrder, getWooProductsByIds } from "@/lib/woo-client";
 import type { WooOrder } from "@/lib/types";
 
 type RouteContext = {
@@ -37,9 +38,19 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json(apiError(ERROR_MESSAGES.unauthorized), { status: 403 });
     }
 
+    const productIds = (response.data.line_items ?? []).map((item) => item.product_id);
+    const productResponse = await getWooProductsByIds(productIds);
+    const productsById = new Map(
+      (productResponse.ok ? productResponse.data : []).map((product) => [
+        product.id,
+        product,
+      ])
+    );
+
     const order: WooOrder = {
       id: response.data.id,
       status: response.data.status,
+      date_created: response.data.date_created,
       date: response.data.date_created,
       total: response.data.total,
       currency: response.data.currency,
@@ -56,6 +67,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
       billing: response.data.billing,
       shipping: response.data.shipping,
       payment_method_title: response.data.payment_method_title,
+      tracking: buildOrderTrackingSummary({
+        date_created: response.data.date_created,
+        status: response.data.status,
+        products: (response.data.line_items ?? []).map((item) =>
+          productsById.get(item.product_id)
+        ),
+      }),
     };
 
     return NextResponse.json(apiSuccess(order));

@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { apiError, apiSuccess, ERROR_MESSAGES, resolveErrorMessage } from "@/lib/errors";
 import { SESSION_COOKIE_NAME, verifySession } from "@/lib/auth-session";
-import { getWooOrders } from "@/lib/woo-client";
+import { buildOrderTrackingSummary } from "@/lib/orderTracking";
+import { getWooOrders, getWooProductsByIds } from "@/lib/woo-client";
 import type { WooOrder } from "@/lib/types";
 
 export async function GET(request: NextRequest) {
@@ -23,9 +24,25 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    const productIds = [
+      ...new Set(
+        response.data.flatMap((order) =>
+          (order.line_items ?? []).map((item) => item.product_id)
+        )
+      ),
+    ];
+    const productResponse = await getWooProductsByIds(productIds);
+    const productsById = new Map(
+      (productResponse.ok ? productResponse.data : []).map((product) => [
+        product.id,
+        product,
+      ])
+    );
+
     const orders: WooOrder[] = response.data.map((order) => ({
       id: order.id,
       status: order.status,
+      date_created: order.date_created,
       date: order.date_created,
       total: order.total,
       currency: order.currency,
@@ -42,6 +59,13 @@ export async function GET(request: NextRequest) {
       billing: order.billing,
       shipping: order.shipping,
       payment_method_title: order.payment_method_title,
+      tracking: buildOrderTrackingSummary({
+        date_created: order.date_created,
+        status: order.status,
+        products: (order.line_items ?? []).map((item) =>
+          productsById.get(item.product_id)
+        ),
+      }),
     }));
 
     return NextResponse.json(apiSuccess(orders));
