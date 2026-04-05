@@ -1,4 +1,5 @@
 import type { Product } from "@/lib/woocommerce-types";
+import { filterProductsForSection } from "@/lib/productLogic";
 
 const getSearchBase = () =>
   process.env.NEXT_PUBLIC_WP_API ??
@@ -26,5 +27,6 @@ export async function searchProducts(query: string): Promise<Product[]> {
     throw new Error(`Search failed (${response.status})`);
   }
 
-  return (await response.json()) as Product[];
+  const products = (await response.json()) as Product[];
+  return filterProductsForSection(products, "default");
 }

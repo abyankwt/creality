@@ -16,6 +16,8 @@ type ProductMetaLike = {
 };
 
 type ProductLike = {
+  name?: string | null;
+  slug?: string | null;
   product_order_type?: ProductOrderType | null;
   order_type?: ProductOrderType | null;
   is_preorder?: boolean | null;
@@ -31,6 +33,19 @@ type ProductLike = {
 
 const PRE_ORDER_DEFAULT_LEAD_TIME = "~45 days";
 const USED_PRINTERS_CATEGORY_SLUG = "used-3d-printers";
+const SERVICE_CATEGORY_SLUG = "services";
+const SERVICE_TAG_SLUG = "service";
+const SERVICE_NAME_TOKENS = [
+  "maintenance",
+  "homeservice",
+  "outofwarranty",
+];
+const SERVICE_SLUG_TOKENS = [
+  "maintenance",
+  "homeservice",
+  "warranty",
+  "service",
+];
 const PRE_ORDER_META_KEYS = [
   "is_preorder",
   "preorder",
@@ -49,6 +64,40 @@ const PRE_ORDER_LEAD_TIME_KEYS = [
 
 function normalizePreOrderToken(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function matchesServiceCategory(value: string | null | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  return normalizePreOrderToken(value) === SERVICE_CATEGORY_SLUG;
+}
+
+function matchesServiceTag(value: string | null | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  return normalizePreOrderToken(value) === SERVICE_TAG_SLUG;
+}
+
+function matchesServiceName(value: string | null | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  const normalizedValue = normalizePreOrderToken(value);
+  return SERVICE_NAME_TOKENS.some((token) => normalizedValue.includes(token));
+}
+
+function matchesServiceSlug(value: string | null | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  const normalizedValue = normalizePreOrderToken(value);
+  return SERVICE_SLUG_TOKENS.some((token) => normalizedValue.includes(token));
 }
 
 function matchesPreOrderToken(value: string | null | undefined) {
@@ -191,6 +240,54 @@ export function isUsedPrinterProduct(product: ProductLike | null | undefined) {
   );
 }
 
+export function isServiceListingProduct(
+  product: ProductLike | null | undefined
+) {
+  if (!product) {
+    return false;
+  }
+
+  if (matchesServiceName(product.name)) {
+    return true;
+  }
+
+  if (product.category_slug?.some((slug) => matchesServiceCategory(slug))) {
+    return true;
+  }
+
+  if (
+    product.categories?.some(
+      (category) =>
+        matchesServiceCategory(category.slug) ||
+        matchesServiceCategory(category.name)
+    )
+  ) {
+    return true;
+  }
+
+  return Boolean(
+    product.tags?.some(
+      (tag) => matchesServiceTag(tag.slug) || matchesServiceTag(tag.name)
+    )
+  );
+}
+
+export function isServiceProduct(product: ProductLike | null | undefined) {
+  if (!product) {
+    return false;
+  }
+
+  if (matchesServiceSlug(product.slug) || matchesServiceName(product.name)) {
+    return true;
+  }
+
+  return Boolean(
+    product.tags?.some(
+      (tag) => matchesServiceTag(tag.slug) || matchesServiceTag(tag.name)
+    )
+  );
+}
+
 export function isVisibleUsedPrinterProduct(
   product: ProductLike | null | undefined
 ) {
@@ -234,6 +331,10 @@ export function filterProductsForSection<T extends ProductLike>(
   section: ProductSection
 ) {
   return products.filter((product) => {
+    if (isServiceListingProduct(product)) {
+      return false;
+    }
+
     if (section === "preorders") {
       return isPreOrderSectionProduct(product);
     }
@@ -268,6 +369,10 @@ export function resolveProductLeadTime(
 export function resolveProductOrderType(
   product: ProductLike | null | undefined
 ): ProductOrderType {
+  if (isServiceProduct(product)) {
+    return "in_stock";
+  }
+
   if (isPreOrderProduct(product)) {
     return "pre_order";
   }
@@ -298,6 +403,10 @@ export function resolveDisplayProductOrderType(
   product: ProductLike | null | undefined,
   section: ProductSection = resolveProductSection(product)
 ): ProductOrderType {
+  if (isServiceProduct(product)) {
+    return "in_stock";
+  }
+
   if (section === "used_printers") {
     return "in_stock";
   }

@@ -42,11 +42,25 @@ type WooProductTaxonomyTermResponse = {
   slug: string;
 };
 
+type WooProductImageResponse = {
+  id: number;
+  src: string;
+};
+
 type WooProductSummaryResponse = {
   id: number;
   stock_status?: string;
   categories?: WooProductTaxonomyTermResponse[];
   tags?: WooProductTaxonomyTermResponse[];
+};
+
+type WooProductDetailResponse = WooProductSummaryResponse & {
+  name: string;
+  slug: string;
+  price?: string;
+  regular_price?: string;
+  catalog_visibility?: string;
+  images?: WooProductImageResponse[];
 };
 
 type WooCustomerResponse = {
@@ -191,6 +205,63 @@ export const getWooProductsByIds = async (productIds: number[]) => {
   )}`;
 
   return wooRequest<WooProductSummaryResponse[]>(path);
+};
+
+export const getWooDetailedProductsByIds = async (productIds: number[]) => {
+  const uniqueIds = [...new Set(productIds)].filter(
+    (id) => Number.isFinite(id) && id > 0
+  );
+
+  if (!uniqueIds.length) {
+    return {
+      ok: true as const,
+      status: 200,
+      data: [] as WooProductDetailResponse[],
+    };
+  }
+
+  const path = `products?include=${encodeURIComponent(uniqueIds.join(","))}&per_page=${Math.max(
+    uniqueIds.length,
+    1
+  )}`;
+
+  return wooRequest<WooProductDetailResponse[]>(path);
+};
+
+export const getWooProductsByTagSlug = async (tagSlug: string) => {
+  const normalizedTagSlug = tagSlug.trim().toLowerCase();
+
+  if (!normalizedTagSlug) {
+    return {
+      ok: true as const,
+      status: 200,
+      data: [] as WooProductDetailResponse[],
+    };
+  }
+
+  const tagResult = await wooRequest<WooProductTaxonomyTermResponse[]>(
+    `products/tags?search=${encodeURIComponent(normalizedTagSlug)}&per_page=100`
+  );
+
+  if (!tagResult.ok) {
+    return tagResult as FetchResult<WooProductDetailResponse[]>;
+  }
+
+  const matchedTag = tagResult.data.find(
+    (tag) => tag.slug.toLowerCase() === normalizedTagSlug
+  );
+
+  if (!matchedTag) {
+    return {
+      ok: true as const,
+      status: 200,
+      data: [] as WooProductDetailResponse[],
+    };
+  }
+
+  return wooRequest<WooProductDetailResponse[]>(
+    `products?tag=${matchedTag.id}&per_page=100`
+  );
 };
 
 export const updateWooOrder = async (orderId: number, payload: Record<string, unknown>) => {

@@ -1,13 +1,19 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 
 type SupportCardProps = {
-  href: string;
+  href?: string;
   title: string;
-  description: string;
-  icon: LucideIcon;
+  description?: string;
+  icon?: LucideIcon;
+  image?: string;
+  price?: string;
+  buttonLabel?: string;
+  onButtonClick?: () => void;
+  buttonDisabled?: boolean;
 };
 
 export default function SupportCard({
@@ -15,17 +21,61 @@ export default function SupportCard({
   title,
   description,
   icon: Icon,
+  image,
+  price,
+  buttonLabel,
+  onButtonClick,
+  buttonDisabled = false,
 }: SupportCardProps) {
-  return (
-    <Link
-      href={href}
-      className="group rounded-2xl border border-gray-200 bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md"
-    >
-      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gray-100 text-gray-700 transition group-hover:bg-black group-hover:text-white">
-        <Icon className="h-5 w-5" />
-      </div>
+  const cardClassName =
+    "group flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md";
+
+  const content = (
+    <>
+      {image ? (
+        <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-[#f5f5f5]">
+          <Image
+            src={image}
+            alt={title}
+            fill
+            sizes="(max-width: 768px) 100vw, 33vw"
+            className="object-contain p-4 transition duration-300 group-hover:scale-[1.03]"
+          />
+        </div>
+      ) : Icon ? (
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gray-100 text-gray-700 transition group-hover:bg-black group-hover:text-white">
+          <Icon className="h-6 w-6" />
+        </div>
+      ) : null}
       <h3 className="mt-4 text-sm font-semibold text-gray-900">{title}</h3>
-      <p className="mt-2 text-sm leading-relaxed text-gray-500">{description}</p>
-    </Link>
+      {description ? (
+        <p className="mt-2 text-sm leading-relaxed text-gray-500">{description}</p>
+      ) : null}
+      {price ? (
+        <p className={`${description ? "mt-4" : "mt-3"} text-sm font-bold text-text sm:text-base`}>
+          {Number(price).toFixed(2)} KWD
+        </p>
+      ) : null}
+      {buttonLabel ? (
+        <button
+          type="button"
+          onClick={onButtonClick}
+          disabled={buttonDisabled}
+          className="mt-auto inline-flex min-h-11 w-full items-center justify-center rounded-full bg-black px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+        >
+          {buttonLabel}
+        </button>
+      ) : null}
+    </>
   );
+
+  if (href && !buttonLabel) {
+    return (
+      <Link href={href} className={cardClassName}>
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className={cardClassName}>{content}</div>;
 }

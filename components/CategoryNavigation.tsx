@@ -78,6 +78,8 @@ function getCategoryImageSrc(imageName: string) {
 }
 
 function CategoryCard({ title, href, imageName, alt }: CategoryCardItem) {
+  const isAccessoriesCard = title === "Accessories";
+
   return (
     <Link
       href={href}
@@ -95,7 +97,16 @@ function CategoryCard({ title, href, imageName, alt }: CategoryCardItem) {
           unoptimized
         />
       </div>
-      <span className="text-sm font-semibold text-gray-900">{title}</span>
+      <span className="text-sm font-semibold text-gray-900">
+        {isAccessoriesCard ? (
+          <>
+            <span className="hidden md:inline">Accessories &amp; Tools</span>
+            <span className="md:hidden">Accessories</span>
+          </>
+        ) : (
+          title
+        )}
+      </span>
     </Link>
   );
 }

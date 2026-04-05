@@ -1,20 +1,27 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   BookOpenText,
   FileDown,
   Headphones,
+  House,
   MessageCircle,
   PackageSearch,
   Search,
+  ShieldAlert,
+  Wrench,
+  type LucideIcon,
 } from "lucide-react";
 import SupportCard from "@/components/SupportCard";
 import SupportFaqAccordion, {
   type SupportFaqItem,
 } from "@/components/SupportFaqAccordion";
 import { SUPPORT_EMAIL } from "@/config/emails";
+import { useCart } from "@/context/CartContext";
+import type { SupportService } from "@/lib/supportServices";
 
 const QUICK_ACTIONS = [
   {
@@ -43,6 +50,35 @@ const QUICK_ACTIONS = [
   },
 ] as const;
 
+const DEFAULT_SERVICE_ICON = Wrench;
+
+const SERVICE_ICONS: Record<string, LucideIcon> = {
+  "maintenance-service": Wrench,
+  "maintenance-service-2": Wrench,
+  "home-service": House,
+  "home-service-2": House,
+  "out-of-warranty-service": ShieldAlert,
+  "out-of-creality": ShieldAlert,
+};
+
+function normalizeServiceToken(value: string) {
+  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-");
+}
+
+function resolveServiceIcon(service: SupportService) {
+  const bySlug = SERVICE_ICONS[normalizeServiceToken(service.slug)];
+  if (bySlug) {
+    return bySlug;
+  }
+
+  const byName = SERVICE_ICONS[normalizeServiceToken(service.title)];
+  if (byName) {
+    return byName;
+  }
+
+  return DEFAULT_SERVICE_ICON;
+}
+
 const FAQ_ITEMS: SupportFaqItem[] = [
   {
     question: "What is special order?",
@@ -67,9 +103,51 @@ const FAQ_ITEMS: SupportFaqItem[] = [
 ];
 
 export default function SupportPage() {
+  const router = useRouter();
+  const { addItem } = useCart();
   const [query, setQuery] = useState("");
+  const [services, setServices] = useState<SupportService[]>([]);
+  const [servicesLoading, setServicesLoading] = useState(true);
+  const [activeServiceId, setActiveServiceId] = useState<number | null>(null);
+  const [serviceError, setServiceError] = useState<string | null>(null);
 
   const normalizedQuery = query.trim().toLowerCase();
+
+  useEffect(() => {
+    let active = true;
+
+    const loadServiceProducts = async () => {
+      try {
+        setServicesLoading(true);
+        const response = await fetch("/api/support-services", {
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          throw new Error(`Unable to load services (${response.status})`);
+        }
+
+        const data = (await response.json()) as { services?: SupportService[] };
+
+        if (!active || !Array.isArray(data.services)) {
+          return;
+        }
+
+        setServices(data.services);
+      } catch (error) {
+        console.error("Failed to load support services:", error);
+      } finally {
+        if (active) {
+          setServicesLoading(false);
+        }
+      }
+    };
+
+    void loadServiceProducts();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const filteredFaqs = useMemo(() => {
     if (!normalizedQuery) {
@@ -96,6 +174,35 @@ export default function SupportPage() {
       );
     });
   }, [normalizedQuery]);
+
+  const filteredServices = useMemo(() => {
+    if (!normalizedQuery) {
+      return services;
+    }
+
+    return services.filter((item) => {
+      return (
+        item.title.toLowerCase().includes(normalizedQuery) ||
+        item.description.toLowerCase().includes(normalizedQuery)
+      );
+    });
+  }, [normalizedQuery, services]);
+
+  const handleServiceRequest = async (productId: number) => {
+    try {
+      setActiveServiceId(productId);
+      setServiceError(null);
+      await addItem(productId, 1);
+      router.push("/checkout");
+    } catch (error) {
+      console.error("Failed to request service:", error);
+      setServiceError(
+        error instanceof Error ? error.message : "Unable to add service to cart."
+      );
+    } finally {
+      setActiveServiceId(null);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-gray-50 py-8 sm:py-10">
@@ -150,7 +257,46 @@ export default function SupportPage() {
           ) : null}
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Our Services</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Request maintenance, repairs, and support services.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {filteredServices.map((service) => (
+              <SupportCard
+                key={service.id}
+                title={service.title}
+                description={service.description}
+                icon={resolveServiceIcon(service)}
+                price={service.price}
+                buttonLabel={
+                  activeServiceId === service.id
+                    ? "Adding..."
+                    : "Request & Pay"
+                }
+                buttonDisabled={activeServiceId !== null}
+                onButtonClick={() => handleServiceRequest(service.id)}
+              />
+            ))}
+          </div>
+          {serviceError ? (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {serviceError}
+            </div>
+          ) : null}
+          {!servicesLoading && filteredServices.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-10 text-center text-sm text-gray-500">
+              No services matched your search.
+            </div>
+          ) : null}
+        </section>
+
+        <section
+          className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]"
+        >
           <div className="space-y-4">
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
