@@ -1,4 +1,5 @@
-/* eslint-disable @next/next/no-img-element */
+import Image from "next/image";
+import { FALLBACK_PRODUCT_IMAGE } from "@/lib/image";
 
 type ProductImageProps = {
   src?: string | null;
@@ -6,17 +7,17 @@ type ProductImageProps = {
   className?: string;
 };
 
-const fallbackImage = "/images/product-placeholder.svg";
-
 export default function ProductImage({
   src,
   alt,
   className,
 }: ProductImageProps) {
   return (
-    <img
-      src={src || fallbackImage}
+    <Image
+      src={src || FALLBACK_PRODUCT_IMAGE}
       alt={alt}
+      width={600}
+      height={600}
       className={["product-image", className].filter(Boolean).join(" ")}
       loading="lazy"
     />

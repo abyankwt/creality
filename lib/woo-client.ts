@@ -4,6 +4,14 @@ type FetchResult<T> =
   | { ok: true; status: number; data: T }
   | { ok: false; status: number; errorMessage?: string };
 
+type NextFetchOptions = {
+  revalidate?: number;
+};
+
+type WooRequestInit = RequestInit & {
+  next?: NextFetchOptions;
+};
+
 type WpUserMe = {
   id: number;
   name: string;
@@ -120,10 +128,13 @@ const parseJson = async <T>(response: Response): Promise<T> => {
   return JSON.parse(text) as T;
 };
 
-const requestJson = async <T>(input: string, init: RequestInit): Promise<FetchResult<T>> => {
+const requestJson = async <T>(input: string, init: WooRequestInit): Promise<FetchResult<T>> => {
   let response: Response;
   try {
-    response = await fetch(input, { ...init, cache: "no-store" });
+    response = await fetch(input, {
+      ...init,
+      ...(init.next ? { next: init.next } : { cache: "no-store" }),
+    });
   } catch {
     return { ok: false, status: 503 };
   }
@@ -143,7 +154,7 @@ const requestJson = async <T>(input: string, init: RequestInit): Promise<FetchRe
   return { ok: true, status: response.status, data };
 };
 
-const wooRequest = async <T>(path: string, init: RequestInit = {}) => {
+const wooRequest = async <T>(path: string, init: WooRequestInit = {}) => {
   const baseUrl = getWordpressUrl();
   const { consumerKey, consumerSecret } = getWooCredentials();
   const urlObj = new URL(`${baseUrl}/wp-json/wc/v3/${path.replace(/^\//, "")}`);
@@ -240,7 +251,10 @@ export const getWooProductsByTagSlug = async (tagSlug: string) => {
   }
 
   const tagResult = await wooRequest<WooProductTaxonomyTermResponse[]>(
-    `products/tags?search=${encodeURIComponent(normalizedTagSlug)}&per_page=100`
+    `products/tags?search=${encodeURIComponent(normalizedTagSlug)}&per_page=100`,
+    {
+      next: { revalidate: 60 },
+    }
   );
 
   if (!tagResult.ok) {
@@ -260,7 +274,10 @@ export const getWooProductsByTagSlug = async (tagSlug: string) => {
   }
 
   return wooRequest<WooProductDetailResponse[]>(
-    `products?tag=${matchedTag.id}&per_page=100`
+    `products?tag=${matchedTag.id}&per_page=100`,
+    {
+      next: { revalidate: 60 },
+    }
   );
 };
 

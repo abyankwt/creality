@@ -9,6 +9,8 @@ import { filterProductsForSection } from "@/lib/productLogic";
 import CampaignHero from "@/components/CampaignHero";
 import { CAMPAIGN_SLIDES } from "@/config/campaigns";
 
+export const revalidate = 60;
+
 type RawSearchParams = Record<string, string | string[] | undefined>;
 
 function getString(p: RawSearchParams, k: string): string | undefined {
@@ -34,20 +36,29 @@ export default async function HomePage({ searchParams }: PageProps) {
   const sort = getString(params, "sort");
   const stock = getString(params, "stock");
   const { orderby, order } = resolveSort(sort);
+  const shouldReusePrimaryProductsForNewArrivals =
+    !stock && orderby === "date" && order === "desc";
 
-  const { data: products, totalPages, totalProducts } = await fetchProducts({
-    orderby,
-    order,
-    stock_status: stock || undefined,
-  });
+  const [productResult, newProductsResult, wpHeroImages] = await Promise.all([
+    fetchProducts({
+      orderby,
+      order,
+      stock_status: stock || undefined,
+    }),
+    shouldReusePrimaryProductsForNewArrivals
+      ? Promise.resolve(null)
+      : fetchProducts({
+          orderby: "date",
+          order: "desc",
+          perPage: 8,
+        }),
+    fetchHeroImages(),
+  ]);
 
-  const { data: newProducts } = await fetchProducts({
-    orderby: "date",
-    order: "desc",
-    perPage: 8,
-  });
-
-  const wpHeroImages = await fetchHeroImages();
+  const { data: products, totalPages, totalProducts } = productResult;
+  const newProducts = shouldReusePrimaryProductsForNewArrivals
+    ? products.slice(0, 8)
+    : newProductsResult?.data ?? [];
   const visibleProducts = filterProductsForSection(products, "default");
   const visibleNewProducts = filterProductsForSection(newProducts, "default");
 

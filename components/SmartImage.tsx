@@ -52,6 +52,7 @@ export default function SmartImage({
         alt={alt}
         fill
         priority={priority}
+        loading={priority ? "eager" : "lazy"}
         sizes={resolvedSizes}
         className={clsx(defaultImageClassName, imageClassName)}
       />

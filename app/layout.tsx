@@ -11,6 +11,7 @@ import {
 } from "@/config/navigation";
 import { CartProvider } from "@/context/CartContext";
 import { getCategoryTree } from "@/lib/categories";
+import { fetchHomepagePopup } from "@/lib/creality-cms";
 import { getMenu } from "@/lib/menu-api";
 import { hasPreOrderProducts } from "@/lib/preOrders";
 
@@ -25,10 +26,11 @@ export default async function RootLayout({
 }: {
   children: ReactNode;
 }) {
-  const [categories, hasPreOrders, menuItems] = await Promise.all([
+  const [categories, hasPreOrders, menuItems, popupData] = await Promise.all([
     getCategoryTree(),
     hasPreOrderProducts(),
     getMenu(),
+    fetchHomepagePopup(),
   ]);
   // Replace this with the WordPress seasonal menu payload when the endpoint is ready.
   const seasonalPromotions: PromotionMenuItem[] = [];
@@ -53,7 +55,7 @@ export default async function RootLayout({
           <Navbar categories={categories} navigation={navigation} />
           <main className="min-h-screen">{children}</main>
           <Footer />
-          <GlobalClientUI />
+          <GlobalClientUI popupData={popupData} />
         </CartProvider>
       </body>
     </html>

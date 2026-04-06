@@ -82,7 +82,7 @@ const USED_PRINTERS_CATEGORY_SLUG = "used-3d-printers";
 const DEFAULT_CURRENCY_CODE = "KWD";
 const DEFAULT_CURRENCY_SYMBOL = "KWD";
 const WOO_REST_TIMEOUT_MS = 5000;
-const WOO_REST_REVALIDATE_SECONDS = 120;
+const WOO_REST_REVALIDATE_SECONDS = 60;
 const wooRestCache = new Map<string, unknown>();
 const USED_PRINTERS_PAGE_SIZE = 12;
 

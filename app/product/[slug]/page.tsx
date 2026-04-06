@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { fetchStoreProductBySlug } from "@/lib/store";
+import { fetchRelatedStoreProducts, fetchStoreProductBySlug } from "@/lib/store";
 import ProductDetail from "@/components/ProductDetail";
 
 type ProductPageProps = {
@@ -41,5 +41,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     redirect("/store");
   }
 
-  return <ProductDetail product={product} />;
+  const relatedProducts = await fetchRelatedStoreProducts(product);
+
+  return <ProductDetail product={product} relatedProducts={relatedProducts} />;
 }

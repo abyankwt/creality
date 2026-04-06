@@ -1,10 +1,18 @@
 import "server-only";
 
-import { isUsedPrinterProduct, isVisibleUsedPrinterProduct } from "@/lib/productLogic";
-import { fetchProductBySlug } from "@/lib/woocommerce";
-import { fetchUsedPrinterProductBySlug } from "@/lib/usedPrinters";
+import { cache } from "react";
+import { getProductAvailability } from "@/lib/productAvailability";
+import {
+  filterProductsForSection,
+  isUsedPrinterProduct,
+  isVisibleUsedPrinterProduct,
+  resolveProductSection,
+} from "@/lib/productLogic";
+import type { Product } from "@/lib/woocommerce-types";
+import { fetchProducts, fetchProductBySlug } from "@/lib/woocommerce";
+import { fetchUsedPrinterProductBySlug, fetchUsedPrinterProducts } from "@/lib/usedPrinters";
 
-export async function fetchStoreProductBySlug(slug: string) {
+export const fetchStoreProductBySlug = cache(async (slug: string) => {
   const product = await fetchProductBySlug(slug);
   if (product) {
     if (isUsedPrinterProduct(product) && !isVisibleUsedPrinterProduct(product)) {
@@ -15,4 +23,40 @@ export async function fetchStoreProductBySlug(slug: string) {
   }
 
   return fetchUsedPrinterProductBySlug(slug);
+});
+
+export async function fetchRelatedStoreProducts(
+  product: Product,
+  limit = 4
+) {
+  const section = resolveProductSection(product);
+  const categoryId = product.categories?.[0]?.id;
+
+  if (section !== "used_printers" && !categoryId) {
+    return [];
+  }
+
+  try {
+    const result =
+      section === "used_printers"
+        ? await fetchUsedPrinterProducts({ page: 1, perPage: 8 })
+        : await fetchProducts({
+            page: 1,
+            perPage: 8,
+            category: categoryId,
+          });
+
+    const relatedSection = section === "used_printers" ? "used_printers" : section;
+
+    return filterProductsForSection(result.data, relatedSection)
+      .filter(
+        (item) =>
+          item.id !== product.id &&
+          getProductAvailability(item, relatedSection).type !== "unavailable" &&
+          item.purchasable
+      )
+      .slice(0, limit);
+  } catch {
+    return [];
+  }
 }

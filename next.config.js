@@ -1,18 +1,43 @@
-﻿/** @type {import('next').NextConfig} */
+const remotePatterns = [
+  {
+    protocol: "https",
+    hostname: "**",
+  },
+  "https://creality.com.kw",
+  "https://www.creality.com.kw",
+  process.env.WC_BASE_URL,
+  process.env.NEXT_PUBLIC_WC_BASE_URL,
+  process.env.WORDPRESS_URL,
+]
+  .filter(Boolean)
+  .flatMap((value) => {
+    try {
+      const url = new URL(value);
+
+      return [
+        {
+          protocol: url.protocol.replace(":", ""),
+          hostname: url.hostname,
+        },
+      ];
+    } catch {
+      return [];
+    }
+  })
+  .filter(
+    (pattern, index, patterns) =>
+      patterns.findIndex(
+        (candidate) =>
+          candidate.protocol === pattern.protocol &&
+          candidate.hostname === pattern.hostname
+      ) === index
+  );
+
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "creality.com.kw" },
-      ...(process.env.WC_BASE_URL
-        ? [
-          {
-            protocol: new URL(process.env.WC_BASE_URL).protocol.replace(":", ""),
-            hostname: new URL(process.env.WC_BASE_URL).hostname,
-          },
-        ]
-        : []),
-    ],
+    remotePatterns,
   },
   async rewrites() {
     return [

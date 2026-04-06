@@ -6,15 +6,11 @@ import { useRouter } from "next/navigation";
 import AddToCartConfirmationModal from "@/components/AddToCartConfirmationModal";
 import OrderWarningModal from "@/components/OrderWarningModal";
 import ProductCard from "@/components/ProductCard";
-import ProductGridSkeleton from "@/components/ProductGridSkeleton";
 import SmartImage from "@/components/SmartImage";
 import { useCart } from "@/context/CartContext";
 import { getProductAvailability } from "@/lib/availability";
-import {
-  filterProductsForSection,
-  resolveDisplayProductOrderType,
-  resolveProductSection,
-} from "@/lib/productLogic";
+import { FALLBACK_PRODUCT_IMAGE, resolveImageSource } from "@/lib/image";
+import { resolveDisplayProductOrderType, resolveProductSection } from "@/lib/productLogic";
 import { formatPrice, getProductPriceInfo } from "@/lib/price";
 import { sanitizeWooDescription } from "@/lib/sanitizeWooDescription";
 import type {
@@ -22,15 +18,13 @@ import type {
   StoreProductAttribute,
 } from "@/lib/store-types";
 
-const FALLBACK_IMAGE = "/images/product-placeholder.svg";
 const PRE_ORDER_BUTTON_STYLE =
   "bg-gradient-to-r from-[#9333EA] to-[#7E22CE] hover:from-[#7E22CE] hover:to-[#6B21A8]";
 
 type ProductDetailProps = {
   product: StoreProduct;
+  relatedProducts: StoreProduct[];
 };
-
-type RelatedProduct = StoreProduct;
 
 type ToastState = {
   message: string;
@@ -87,17 +81,18 @@ const Star = ({ filled }: { filled: boolean }) => (
   </svg>
 );
 
-export default function ProductDetail({ product }: ProductDetailProps) {
+export default function ProductDetail({
+  product,
+  relatedProducts,
+}: ProductDetailProps) {
   const router = useRouter();
   const { addItem, refreshCart } = useCart();
   const [selectedImage, setSelectedImage] = useState<string>(
-    product.images?.[0]?.src ?? FALLBACK_IMAGE
+    product.images?.[0]?.src ?? FALLBACK_PRODUCT_IMAGE
   );
   const [imageFade, setImageFade] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [adding, setAdding] = useState(false);
-  const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>([]);
-  const [relatedLoading, setRelatedLoading] = useState(false);
   const [showSticky, setShowSticky] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
   const [warningOpen, setWarningOpen] = useState(false);
@@ -109,9 +104,9 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   const galleryImages =
     product.images && product.images.length > 0
       ? product.images
-      : [{ id: 0, src: FALLBACK_IMAGE, alt: product.name }];
+      : [{ id: 0, src: FALLBACK_PRODUCT_IMAGE, alt: product.name }];
 
-  const mainImage = selectedImage || galleryImages[0]?.src || FALLBACK_IMAGE;
+  const mainImage = selectedImage || galleryImages[0]?.src || FALLBACK_PRODUCT_IMAGE;
   const section = resolveProductSection(product);
   const availability = getProductAvailability(product, section);
   const displayOrderType = resolveDisplayProductOrderType(product, section);
@@ -130,7 +125,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
   };
   const videoUrl = extractVideoUrl(product.meta_data);
   const embedUrl = getEmbedUrl(videoUrl);
-  const thumbImage = product.images?.[0]?.src ?? FALLBACK_IMAGE;
+  const thumbImage = resolveImageSource(product.images?.[0], FALLBACK_PRODUCT_IMAGE);
   const priceInfo = getProductPriceInfo(product);
 
   const ratingValue = Number(product.average_rating ?? 0);
@@ -150,63 +145,6 @@ export default function ProductDetail({ product }: ProductDetailProps) {
     typeof product.stock_quantity === "number" &&
     product.stock_quantity > 0 &&
     product.stock_quantity <= 5;
-
-  useEffect(() => {
-    const categoryId = product.categories?.[0]?.id;
-
-    if (!categoryId) {
-      setRelatedProducts([]);
-      return;
-    }
-
-    let isActive = true;
-    const fetchRelated = async () => {
-      try {
-        setRelatedLoading(true);
-        const params = new URLSearchParams();
-        params.set("per_page", "8");
-        params.set("category", String(categoryId));
-        params.set("exclude", String(product.id));
-        if (section === "used_printers") {
-          params.set("used_printers", "1");
-        } else if (section === "preorders") {
-          params.set("product_order_type", "pre_order");
-        }
-
-        const response = await fetch(`/api/products?${params.toString()}`);
-        const data = await response.json();
-        const products = (Array.isArray(data) ? data : data?.products ?? []) as StoreProduct[];
-        const relatedSection =
-          section === "used_printers" ? "used_printers" : section;
-        const filtered = filterProductsForSection<StoreProduct>(
-          products,
-          relatedSection
-        ).filter(
-          (item) =>
-            item.id !== product.id &&
-            getProductAvailability(item, relatedSection).type !== "unavailable" &&
-            item.purchasable
-        );
-
-        if (isActive) {
-          setRelatedProducts(filtered.slice(0, 4));
-        }
-      } catch {
-        if (isActive) {
-          setRelatedProducts([]);
-        }
-      } finally {
-        if (isActive) {
-          setRelatedLoading(false);
-        }
-      }
-    };
-
-    void fetchRelated();
-    return () => {
-      isActive = false;
-    };
-  }, [product.categories, product.id, section]);
 
   useEffect(() => {
     const target = primaryActionsRef.current;
@@ -323,7 +261,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                       aria-label={`View ${product.name} image`}
                     >
                       <SmartImage
-                        src={image.src}
+                        src={resolveImageSource(image, FALLBACK_PRODUCT_IMAGE)}
                         alt={image.alt ?? product.name}
                         mode="product"
                         sizes="96px"
@@ -344,7 +282,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
                       className="w-[82%] max-h-[55vh] flex-shrink-0 snap-center overflow-hidden rounded-xl border border-gray-200 bg-white"
                     >
                       <SmartImage
-                        src={image.src}
+                        src={image.src ?? FALLBACK_PRODUCT_IMAGE}
                         alt={image.alt ?? product.name}
                         mode="product"
                         sizes="80vw"
@@ -587,9 +525,7 @@ export default function ProductDetail({ product }: ProductDetailProps) {
           <div className="mb-4 flex items-end justify-between">
             <h2 className="text-lg font-semibold text-gray-900">Related products</h2>
           </div>
-          {relatedLoading ? (
-            <ProductGridSkeleton count={4} />
-          ) : relatedProducts.length === 0 ? (
+          {relatedProducts.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
               No related products available.
             </div>

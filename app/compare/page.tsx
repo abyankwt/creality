@@ -4,9 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import useCompare from "@/components/compare/useCompare";
+import { resolveImageSource } from "@/lib/image";
 import type { StoreProduct, StoreProductAttribute } from "@/lib/store-types";
-
-const FALLBACK = "/images/product-placeholder.svg";
 
 /* Spec keys we try to match from product attributes */
 const SPEC_KEYS = [
@@ -171,9 +170,10 @@ export default function ComparePage() {
                                                 {/* Thumbnail */}
                                                 <div className="relative h-32 w-full overflow-hidden rounded-xl bg-gray-100">
                                                     <Image
-                                                        src={product.images?.[0]?.src ?? FALLBACK}
+                                                        src={resolveImageSource(product.images?.[0])}
                                                         alt={product.name}
                                                         fill
+                                                        loading="lazy"
                                                         sizes="200px"
                                                         className="object-cover"
                                                     />

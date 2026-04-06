@@ -5,6 +5,8 @@ export type WordPressMenuItem = {
   parent?: number;
 };
 
+const MENU_REVALIDATE_SECONDS = 60;
+
 const FALLBACK_MENU: WordPressMenuItem[] = [
   { id: 1, title: "All Products", url: "/products", parent: 0 },
   { id: 2, title: "Pre-orders", url: "/pre-orders", parent: 0 },
@@ -30,7 +32,7 @@ export async function getMenu(): Promise<WordPressMenuItem[]> {
 
   try {
     const res = await fetch(`${baseUrl}/wp-json/custom/v1/menu`, {
-      cache: "no-store",
+      next: { revalidate: MENU_REVALIDATE_SECONDS },
     });
 
     if (!res.ok) {
@@ -49,4 +51,3 @@ export async function getMenu(): Promise<WordPressMenuItem[]> {
     return FALLBACK_MENU;
   }
 }
-

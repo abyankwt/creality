@@ -1,18 +1,26 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { POPUP_CONFIG } from "@/config/popup-config";
+import type { CrealityPopupData } from "@/types/creality-cms";
 
 const STORAGE_KEY = "creality_promo_v2_dismissed";
+const FALLBACK_IMAGE = "/images/product-placeholder.svg";
 
-export default function PromoPopup() {
+type PromoPopupProps = {
+    data: CrealityPopupData | null;
+};
+
+export default function PromoPopup({ data }: PromoPopupProps) {
+    console.log("Popup Data:", data);
+    console.log("STATE DATA:", data);
+
     const [open, setOpen] = useState(false);
     const closeButtonRef = useRef<HTMLButtonElement>(null);
 
     useEffect(() => {
-        if (!POPUP_CONFIG.enabled) return;
+        if (!data?.enabled) return;
 
         // Check localStorage dismiss timestamp
         const check = () => {
@@ -37,7 +45,7 @@ export default function PromoPopup() {
 
         const timer = check();
         return () => { if (timer) clearTimeout(timer); };
-    }, []);
+    }, [data?.enabled]);
 
     useEffect(() => {
         if (!open) return;
@@ -57,9 +65,22 @@ export default function PromoPopup() {
         setOpen(false);
     };
 
+    const [imageSrc, setImageSrc] = useState(data?.image || FALLBACK_IMAGE);
+
+    useEffect(() => {
+        setImageSrc(data?.image || FALLBACK_IMAGE);
+    }, [data?.image]);
+
+    if (!data) return null;
+    if (!data.enabled) return null;
     if (!open) return null;
 
-    const { title, description, image, ctaText, ctaLink } = POPUP_CONFIG;
+    const title = data.title;
+    const description = data.description;
+    const buttonText = data?.button_text;
+    const buttonLink = data?.button_link;
+
+    console.log("CTA:", buttonText, buttonLink);
 
     return (
         <div
@@ -69,13 +90,13 @@ export default function PromoPopup() {
             aria-labelledby="promo-popup-title"
             onClick={(e) => { if (e.target === e.currentTarget) handleDismiss(); }}
         >
-            <div className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl animate-popup">
+            <div className="animate-popup relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl md:max-w-3xl">
                 {/* Close button */}
                 <button
                     ref={closeButtonRef}
                     type="button"
                     onClick={handleDismiss}
-                    className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-gray-600 shadow-sm backdrop-blur transition hover:bg-gray-100"
+                    className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-gray-600 shadow-sm backdrop-blur transition hover:bg-gray-100 md:right-6 md:top-6 md:h-10 md:w-10"
                     aria-label="Close promotion"
                 >
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -83,54 +104,48 @@ export default function PromoPopup() {
                     </svg>
                 </button>
 
-                <div className="flex flex-col sm:flex-row">
+                <div className="flex flex-col gap-4 p-4 md:flex-row md:gap-8 md:p-8">
                     {/* Image left */}
-                    {image && (
-                        <div className="relative h-48 w-full sm:h-auto sm:w-2/5 flex-shrink-0">
-                            <Image
-                                src={image}
-                                alt={title}
-                                fill
-                                sizes="(max-width: 640px) 100vw, 240px"
-                                className="object-cover"
-                                priority
-                            />
-                        </div>
-                    )}
+                    <div className="relative h-52 w-full flex-shrink-0 overflow-hidden rounded-2xl bg-[#f5f5f5] md:h-auto md:min-h-[360px] md:w-[42%]">
+                        <Image
+                            src={imageSrc}
+                            alt={title}
+                            width={500}
+                            height={500}
+                            loading="lazy"
+                            className="h-full w-full rounded-xl object-cover"
+                            onError={() => setImageSrc(FALLBACK_IMAGE)}
+                        />
+                    </div>
 
                     {/* Content right */}
-                    <div className="flex flex-1 flex-col justify-center gap-4 p-6">
-                        <div className="space-y-2">
-                            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#6BBE45]">
-                                {POPUP_CONFIG.type === "new-product"
-                                    ? "New Release"
-                                    : POPUP_CONFIG.type === "limited-offer"
-                                        ? "Limited Offer"
-                                        : "Announcement"}
-                            </p>
+                    <div className="flex flex-1 flex-col justify-center gap-4 md:w-[58%] md:gap-6">
+                        <div className="space-y-3 md:space-y-4">
                             <h2
                                 id="promo-popup-title"
-                                className="text-xl font-semibold text-gray-900 leading-snug"
+                                className="text-xl font-semibold leading-snug text-gray-900 md:text-3xl"
                             >
                                 {title}
                             </h2>
-                            <p className="text-sm text-gray-500 leading-relaxed">
+                            <p className="text-sm leading-relaxed text-gray-500 md:pt-1 md:text-base">
                                 {description}
                             </p>
                         </div>
 
-                        <div className="flex flex-col gap-2 sm:flex-row">
-                            <Link
-                                href={ctaLink}
-                                onClick={handleDismiss}
-                                className="flex-1 rounded-xl bg-black px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-gray-900"
-                            >
-                                {ctaText}
-                            </Link>
+                        <div className="flex flex-col gap-3 md:flex-row md:gap-4">
+                            {buttonText ? (
+                                <a
+                                    href={buttonLink || "#"}
+                                    onClick={handleDismiss}
+                                    className="inline-block rounded-lg bg-black px-6 py-3 text-center text-sm font-semibold text-white transition hover:bg-gray-900 md:text-base"
+                                >
+                                    {buttonText}
+                                </a>
+                            ) : null}
                             <button
                                 type="button"
                                 onClick={handleDismiss}
-                                className="rounded-xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50"
+                                className="rounded-xl border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50 md:px-6 md:py-3.5 md:text-base"
                             >
                                 Dismiss
                             </button>

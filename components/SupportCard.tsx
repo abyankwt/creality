@@ -2,7 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
+
+const FALLBACK_IMAGE = "/images/product-placeholder.svg";
 
 type SupportCardProps = {
   href?: string;
@@ -27,19 +30,27 @@ export default function SupportCard({
   onButtonClick,
   buttonDisabled = false,
 }: SupportCardProps) {
+  const [imageSrc, setImageSrc] = useState(image || "");
+
+  useEffect(() => {
+    setImageSrc(image || "");
+  }, [image]);
+
   const cardClassName =
     "group flex h-full flex-col rounded-2xl border border-gray-200 bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md";
 
   const content = (
     <>
-      {image ? (
+      {imageSrc ? (
         <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-[#f5f5f5]">
           <Image
-            src={image}
+            src={imageSrc}
             alt={title}
             fill
+            loading="lazy"
             sizes="(max-width: 768px) 100vw, 33vw"
             className="object-contain p-4 transition duration-300 group-hover:scale-[1.03]"
+            onError={() => setImageSrc(FALLBACK_IMAGE)}
           />
         </div>
       ) : Icon ? (

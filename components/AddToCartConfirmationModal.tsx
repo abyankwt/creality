@@ -1,14 +1,16 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
+import Image from "next/image";
 import Link from "next/link";
 import { X } from "lucide-react";
+import { resolveImageSource } from "@/lib/image";
 import { formatPrice } from "@/lib/price";
 
 type ConfirmationProduct = {
   name: string;
   price?: number | string | null;
   images?: Array<{
+    thumbnail?: string | null;
     src?: string | null;
     alt?: string | null;
   }>;
@@ -20,9 +22,6 @@ type AddToCartConfirmationModalProps = {
   onClose: () => void;
 };
 
-const FALLBACK_IMAGE =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600'%3E%3Crect fill='%23f3f4f6' width='600' height='600'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%239ca3af' font-family='Arial,sans-serif' font-size='24'%3ENo Image%3C/text%3E%3C/svg%3E";
-
 export default function AddToCartConfirmationModal({
   open,
   product,
@@ -30,7 +29,7 @@ export default function AddToCartConfirmationModal({
 }: AddToCartConfirmationModalProps) {
   if (!open) return null;
 
-  const imageSrc = product.images?.[0]?.src || FALLBACK_IMAGE;
+  const imageSrc = resolveImageSource(product.images?.[0]);
   const imageAlt = product.images?.[0]?.alt || product.name;
 
   return (
@@ -66,9 +65,12 @@ export default function AddToCartConfirmationModal({
         <div className="mt-5 rounded-2xl border border-gray-200 bg-gray-50 p-4">
           <div className="flex items-center gap-4">
             <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white">
-              <img
+              <Image
                 src={imageSrc}
                 alt={imageAlt}
+                width={160}
+                height={160}
+                loading="lazy"
                 className="h-full w-full object-contain"
               />
             </div>

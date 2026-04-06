@@ -1,6 +1,6 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -8,6 +8,7 @@ import AddToCartConfirmationModal from "@/components/AddToCartConfirmationModal"
 import OrderWarningModal from "@/components/OrderWarningModal";
 import ProductActionButton from "@/components/ProductActionButton";
 import { useCart } from "@/context/CartContext";
+import { resolveImageSource } from "@/lib/image";
 import { getProductAvailability } from "@/lib/productAvailability";
 import type { ProductAvailability } from "@/lib/productAvailability";
 import { formatPrice, getProductPriceInfo } from "@/lib/price";
@@ -24,9 +25,6 @@ type ProductCardProps = {
   onAddToCart?: (message?: string) => void;
   onAddToCartError?: (message?: string) => void;
 };
-
-const fallbackImage =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600' viewBox='0 0 600 600'%3E%3Crect fill='%23f3f4f6' width='600' height='600'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%239ca3af' font-family='Arial,sans-serif' font-size='24'%3ENo Image%3C/text%3E%3C/svg%3E";
 
 export default function ProductCard({
   product,
@@ -46,7 +44,7 @@ export default function ProductCard({
   const [toastType, setToastType] = useState<"success" | "error">("success");
   const toastTimerRef = useRef<number | null>(null);
 
-  const resolvedImage = product.images?.[0]?.src || fallbackImage;
+  const resolvedImage = resolveImageSource(product.images?.[0]);
   const priceInfo = getProductPriceInfo(product);
   const productOrderType =
     product_order_type ??
@@ -166,10 +164,13 @@ export default function ProductCard({
           aria-label={`View ${product.name}`}
         >
           <div className="product-image-wrapper relative rounded-xl bg-[#f5f5f5]">
-            <img
+            <Image
               src={resolvedImage}
               alt={product.name}
-              className="transition duration-300 group-hover:scale-[1.03]"
+              width={600}
+              height={600}
+              loading="lazy"
+              className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.03]"
             />
           </div>
         </Link>

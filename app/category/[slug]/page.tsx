@@ -7,6 +7,8 @@ import {
 } from "@/lib/catalog";
 import { resolveProductSectionFromSlug } from "@/lib/productLogic";
 
+export const revalidate = 60;
+
 export async function generateMetadata({
   params,
 }: {
